@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { put } from "@vercel/blob";
 import { getAdminSession } from "@/lib/auth";
 
 type Body = Record<string, unknown>;
