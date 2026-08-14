@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tour {
+  id                 Int       @id @default(autoincrement())
+  slug               String    @unique
+  name               String
+  price              String
+  currency           String    @default("₽")
+  discountedPrice    String?
+  discountPercentage Int       @default(0)
+  shortDescription   String?
+  description        String?
+  image              String?
+  thumbImage         String?
+  destination        String
+  country            String?
+  city               String?
+  duration           String?
+  departureDate      DateTime?
+  returnDate         DateTime?
+  capacity           Int?
+  remainingCapacity  Int?
+  accommodation      String?
+  transportation     String?
+  meals              String?
+  guide              String?
+  meetingPoint       String?
+  mapUrl             String?
+  highlights         String[]  @default([])
+  included           String[]  @default([])
+  excluded           String[]  @default([])
+  requirements       String[]  @default([])
+  itinerary          Json      @default("[]")
+  gallery            String[]  @default([])
+  isSpecial          Boolean   @default(false)
+  isPublished        Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+
+  @@index([isPublished])
+  @@index([destination])
+  @@index([country])
+  @@index([city])
+  @@map("tours")
+}
+
+model Admin {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+
+  @@map("admins")
+}
