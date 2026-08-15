@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { MessageCircle, Send, Phone, MapPin } from "lucide-react";
-
+import Image from "next/image";
 export default function Footer() {
   return (
     <footer
@@ -163,44 +163,53 @@ export default function Footer() {
 
             {/* Telegram */}
 
-            <Link
-              href="https://t.me/romdental"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="
-                group
-                flex
-                flex-col
-                items-center
-                gap-2
-                text-primary
-                transition-colors
-                hover:text-primary/70
-              "
-            >
-              <div
-                className="
-                  flex
-                  h-11
-                  w-11
-                  items-center
-                  justify-center
-                  rounded-2xl
-                  border
-                  border-border
-                  bg-card
-                  transition-all
-                  group-hover:scale-110
-                  group-hover:border-primary/40
-                "
-              >
-                <Send className="h-5 w-5" />
-              </div>
+         {/* Bale */}
 
-              <span className="text-sm font-medium">
-                تلگرام
-              </span>
-            </Link>
+<Link
+  href="https://ble.ir/romdental"
+  target="_blank"
+  rel="noopener noreferrer"
+  aria-label="پیام در بله"
+  className="
+    group
+    flex
+    flex-col
+    items-center
+    gap-2
+    text-primary
+    transition-colors
+    hover:text-primary/70
+  "
+>
+  <div
+    className="
+      flex
+      h-11
+      w-11
+      items-center
+      justify-center
+      rounded-2xl
+      border
+      border-border
+      bg-card
+      transition-all
+      group-hover:scale-110
+      group-hover:border-primary/40
+    "
+  >
+    <Image
+      src="/icons/bale.svg"
+      alt="بله"
+      width={22}
+      height={22}
+      className="object-contain"
+    />
+  </div>
+
+  <span className="text-sm font-medium">
+    بله
+  </span>
+</Link>
 
             {/* Phone */}
 

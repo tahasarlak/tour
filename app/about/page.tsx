@@ -1,4 +1,5 @@
 import { MessageCircle, Send, Phone } from "lucide-react";
+import Image from "next/image";
 
 export default function AboutPage() {
   const trustItems = [
@@ -192,77 +193,7 @@ export default function AboutPage() {
             TRAVEL EXPERIENCE
         ========================================= */}
 
-        <div className="space-y-8">
-          <div
-            className="
-              rounded-3xl
-              border
-              border-border
-              bg-card
-              p-9
-              text-card-foreground
-              shadow-sm
-            "
-          >
-            <h3 className="mb-5 flex items-center gap-2 text-lg font-semibold text-primary">
-              🌍 تجربه سفر با ما
-            </h3>
-
-            <div
-              className="
-                rounded-3xl
-                border
-                border-border
-                bg-background
-                p-8
-                text-center
-                shadow-sm
-                transition-transform
-                duration-300
-                hover:scale-105
-              "
-            >
-              <p className="text-5xl font-bold tracking-tighter text-primary sm:text-6xl">
-                سفر
-              </p>
-
-              <p className="mt-3 text-xs uppercase tracking-[3px] text-muted-foreground">
-                مقصد جدید، تجربه‌ای جدید
-              </p>
-            </div>
-
-            <div className="mt-8 text-center">
-              <a
-                href="https://t.me/romdental/3503?single"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="
-                  flex
-                  items-center
-                  justify-center
-                  gap-2
-                  rounded-xl
-                  border
-                  border-border
-                  bg-secondary
-                  px-5
-                  py-3
-                  font-medium
-                  text-secondary-foreground
-                  transition
-                  hover:bg-accent
-                  hover:text-accent-foreground
-                "
-              >
-                <MessageCircle size={28} />
-
-                <span>
-                  مشاهده تجربیات مسافران و ارتباط مستقیم در تلگرام
-                </span>
-              </a>
-            </div>
-          </div>
-        </div>
+      
       </div>
 
       {/* =========================================
@@ -287,31 +218,41 @@ export default function AboutPage() {
         <div className="flex flex-col justify-center gap-4 sm:flex-row">
           {/* TELEGRAM */}
 
-          <a
-            href="https://t.me/Ahmadreza_raste"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="
-              flex
-              items-center
-              justify-center
-              gap-2
-              rounded-xl
-              border
-              border-border
-              bg-secondary
-              px-5
-              py-3
-              font-medium
-              text-secondary-foreground
-              transition
-              hover:bg-accent
-              hover:text-accent-foreground
-            "
-          >
-            <MessageCircle size={20} />
-            تلگرام
-          </a>
+        {/* BALE */}
+
+<a
+  href="https://ble.ir/romdental"
+  target="_blank"
+  rel="noopener noreferrer"
+  aria-label="ارتباط در بله"
+  className="
+    flex
+    items-center
+    justify-center
+    gap-2
+    rounded-xl
+    border
+    border-border
+    bg-secondary
+    px-5
+    py-3
+    font-medium
+    text-secondary-foreground
+    transition
+    hover:bg-accent
+    hover:text-accent-foreground
+  "
+>
+  <Image
+    src="/icons/bale.svg"
+    alt="بله"
+    width={20}
+    height={20}
+    className="object-contain"
+  />
+
+  بله
+</a>
 
           {/* WHATSAPP */}
 

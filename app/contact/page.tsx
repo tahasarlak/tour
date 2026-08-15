@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 
 import {
   MessageCircle,
@@ -66,7 +67,7 @@ export default function ContactPage() {
               </h2>
 
               <a
-                href="tel:+79254212300"
+                href="tel:+989171050134"
                 className="
                   text-lg
                   text-foreground
@@ -74,7 +75,7 @@ export default function ContactPage() {
                   hover:text-primary
                 "
               >
-                +79254212300
+                +989171050134
               </a>
 
               <p className="mt-1 text-sm text-muted-foreground">
@@ -83,83 +84,7 @@ export default function ContactPage() {
             </div>
           </div>
 
-          {/* ایمیل */}
-
-          <div className="flex items-start gap-4">
-            <div
-              className="
-                flex
-                h-11
-                w-11
-                shrink-0
-                items-center
-                justify-center
-                rounded-xl
-                bg-primary/10
-                text-primary
-              "
-            >
-              <Mail size={21} />
-            </div>
-
-            <div>
-              <h2 className="mb-1 text-lg font-semibold text-primary">
-                ایمیل
-              </h2>
-
-              <a
-                href="mailto:romdental2028@gmail.com"
-                className="
-                  break-all
-                  text-lg
-                  text-foreground
-                  transition
-                  hover:text-primary
-                "
-              >
-                romdental2028@gmail.com
-              </a>
-
-              <p className="mt-1 text-sm text-muted-foreground">
-                پاسخگویی به سوالات و درخواست‌های شما
-              </p>
-            </div>
-          </div>
-
-          {/* آدرس */}
-
-          <div className="flex items-start gap-4">
-            <div
-              className="
-                flex
-                h-11
-                w-11
-                shrink-0
-                items-center
-                justify-center
-                rounded-xl
-                bg-primary/10
-                text-primary
-              "
-            >
-              <MapPin size={21} />
-            </div>
-
-            <div>
-              <h2 className="mb-1 text-lg font-semibold text-primary">
-                آدرس
-              </h2>
-
-              <p className="text-lg text-foreground">
-                کوچه پس کوچه مسکو
-              </p>
-
-              <p className="mt-1 text-sm text-muted-foreground">
-                جهت هماهنگی مراجعه حضوری، لطفاً ابتدا تماس بگیرید.
-              </p>
-            </div>
-          </div>
-
+    
           {/* زمان پاسخ */}
 
           <div
@@ -195,7 +120,7 @@ export default function ContactPage() {
               {/* واتساپ */}
 
               <a
-                href="https://wa.me/79254212300"
+                href="https://wa.me/989171050134"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="
@@ -223,39 +148,45 @@ export default function ContactPage() {
                 </span>
               </a>
 
-              {/* تلگرام */}
+        {/* بله */}
 
-              <a
-                href="https://t.me/Ahmadreza_raste"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="
-                  flex
-                  min-h-[52px]
-                  items-center
-                  justify-center
-                  gap-2
-                  rounded-xl
-                  border
-                  border-border
-                  bg-secondary
-                  px-4
-                  py-3
-                  font-bold
-                  text-secondary-foreground
-                  transition
-                  hover:bg-accent
-                  hover:text-accent-foreground
-                  active:scale-[0.98]
-                "
-              >
-                <Send size={20} />
+<a
+  href="https://ble.ir/+989171050134"
+  target="_blank"
+  rel="noopener noreferrer"
+  aria-label="ارتباط در بله"
+  className="
+    flex
+    min-h-[52px]
+    items-center
+    justify-center
+    gap-2
+    rounded-xl
+    border
+    border-border
+    bg-secondary
+    px-4
+    py-3
+    font-bold
+    text-secondary-foreground
+    transition
+    hover:bg-accent
+    hover:text-accent-foreground
+    active:scale-[0.98]
+  "
+>
+  <Image
+    src="/icons/bale.svg"
+    alt="بله"
+    width={20}
+    height={20}
+    className="object-contain"
+  />
 
-                <span>
-                  تلگرام
-                </span>
-              </a>
-
+  <span>
+    بله
+  </span>
+</a>
               {/* تماس */}
 
               <a
