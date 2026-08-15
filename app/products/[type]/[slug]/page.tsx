@@ -1,5 +1,3 @@
-// app/tours/[slug]/page.tsx
-
 import { notFound } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
@@ -7,8 +5,24 @@ import { getAdminSession } from "@/lib/auth";
 
 import ProductPageContent from "@/components/product/ProductPageContent";
 
+import {
+  PRODUCT_TYPES,
+  type ProductType,
+} from "@/lib/product-types";
+
+// ==========================================
+// FORCE DYNAMIC
+// ==========================================
+
+export const dynamic = "force-dynamic";
+
+// ==========================================
+// TYPES
+// ==========================================
+
 type Props = {
   params: Promise<{
+    type: string;
     slug: string;
   }>;
 };
@@ -18,31 +32,128 @@ type Props = {
 // ==========================================
 
 export async function generateStaticParams() {
-  const tours = await prisma.tour.findMany({
-    where: {
-      isPublished: true,
-    },
-    select: {
-      slug: true,
-    },
-  });
+  const [
+    tours,
+    trainTickets,
+    flightTickets,
+    accommodations,
+    touristVisas,
+  ] = await Promise.all([
+    prisma.tour.findMany({
+      where: {
+        isPublished: true,
+      },
+      select: {
+        slug: true,
+      },
+    }),
 
-  return tours.map((tour) => ({
-    slug: tour.slug,
-  }));
+    prisma.trainTicket.findMany({
+      where: {
+        isPublished: true,
+      },
+      select: {
+        slug: true,
+      },
+    }),
+
+    prisma.flightTicket.findMany({
+      where: {
+        isPublished: true,
+      },
+      select: {
+        slug: true,
+      },
+    }),
+
+    prisma.accommodation.findMany({
+      where: {
+        isPublished: true,
+      },
+      select: {
+        slug: true,
+      },
+    }),
+
+    prisma.touristVisa.findMany({
+      where: {
+        isPublished: true,
+      },
+      select: {
+        slug: true,
+      },
+    }),
+  ]);
+
+  return [
+    // =========================
+    // TOURS
+    // =========================
+
+    ...tours.map((item) => ({
+      type: "tour",
+      slug: item.slug,
+    })),
+
+    // =========================
+    // TRAIN
+    // =========================
+
+    ...trainTickets.map((item) => ({
+      type: "train",
+      slug: item.slug,
+    })),
+
+    // =========================
+    // FLIGHT
+    // =========================
+
+    ...flightTickets.map((item) => ({
+      type: "flight",
+      slug: item.slug,
+    })),
+
+    // =========================
+    // ACCOMMODATION
+    // =========================
+
+    ...accommodations.map((item) => ({
+      type: "accommodation",
+      slug: item.slug,
+    })),
+
+    // =========================
+    // VISA
+    // =========================
+
+    ...touristVisas.map((item) => ({
+      type: "visa",
+      slug: item.slug,
+    })),
+  ];
 }
 
 // ==========================================
-// TOUR PAGE
+// PRODUCT PAGE
 // ==========================================
 
-export default async function TourPage({
+export default async function ProductPage({
   params,
 }: Props) {
-  const { slug } = await params;
+  const { type, slug } = await params;
 
   // ========================================
-  // ADMIN
+  // VALIDATE TYPE
+  // ========================================
+
+  if (!PRODUCT_TYPES.includes(type as ProductType)) {
+    notFound();
+  }
+
+  const productType = type as ProductType;
+
+  // ========================================
+  // ADMIN SESSION
   // ========================================
 
   const adminSession = await getAdminSession();
@@ -50,57 +161,124 @@ export default async function TourPage({
   const isAdmin = !!adminSession;
 
   // ========================================
-  // FIND TOUR
+  // FIND PRODUCT
   // ========================================
 
-  const tour = await prisma.tour.findUnique({
-    where: {
-      slug,
-    },
-  });
+  let product;
+
+  switch (productType) {
+    // ======================================
+    // TOUR
+    // ======================================
+
+    case "tour":
+      product = await prisma.tour.findUnique({
+        where: {
+          slug,
+        },
+      });
+      break;
+
+    // ======================================
+    // TRAIN TICKET
+    // ======================================
+
+    case "train":
+      product =
+        await prisma.trainTicket.findUnique({
+          where: {
+            slug,
+          },
+        });
+      break;
+
+    // ======================================
+    // FLIGHT TICKET
+    // ======================================
+
+    case "flight":
+      product =
+        await prisma.flightTicket.findUnique({
+          where: {
+            slug,
+          },
+        });
+      break;
+
+    // ======================================
+    // ACCOMMODATION
+    // ======================================
+
+    case "accommodation":
+      product =
+        await prisma.accommodation.findUnique({
+          where: {
+            slug,
+          },
+        });
+      break;
+
+    // ======================================
+    // TOURIST VISA
+    // ======================================
+
+    case "visa":
+      product =
+        await prisma.touristVisa.findUnique({
+          where: {
+            slug,
+          },
+        });
+      break;
+
+    default:
+      notFound();
+  }
 
   // ========================================
   // NOT FOUND
   // ========================================
 
-  if (!tour) {
+  if (!product) {
     notFound();
   }
 
   // ========================================
-  // HIDDEN TOUR
+  // HIDDEN PRODUCT
   // فقط Admin می‌تواند ببیند
   // ========================================
 
-  if (!tour.isPublished && !isAdmin) {
+  if (!product.isPublished && !isAdmin) {
     notFound();
   }
 
   // ========================================
-  // NORMALIZE
+  // NORMALIZE PRICE
   // ========================================
 
-  const normalizedTour = {
-    ...tour,
+  const normalizedProduct = {
+    ...product,
 
-    price: Number(tour.price),
+    price: Number(product.price),
 
     discountedPrice:
-      tour.discountedPrice !== null
-        ? Number(tour.discountedPrice)
+      product.discountedPrice !== null
+        ? Number(product.discountedPrice)
         : null,
 
     discountPercentage:
-      tour.discountPercentage ?? 0,
+      product.discountPercentage ?? 0,
 
     capacity:
-      tour.capacity !== null
-        ? Number(tour.capacity)
+      "capacity" in product &&
+      product.capacity !== null
+        ? Number(product.capacity)
         : null,
 
     remainingCapacity:
-      tour.remainingCapacity !== null
-        ? Number(tour.remainingCapacity)
+      "remainingCapacity" in product &&
+      product.remainingCapacity !== null
+        ? Number(product.remainingCapacity)
         : null,
   };
 
@@ -110,8 +288,8 @@ export default async function TourPage({
 
   return (
     <ProductPageContent
-      type="tour"
-      product={normalizedTour}
+      type={productType}
+      product={normalizedProduct}
       isAdmin={isAdmin}
     />
   );

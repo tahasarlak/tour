@@ -11,20 +11,16 @@ type Props = {
 export default function NavbarClient({
   children,
 }: Props) {
-  const [isOpen, setIsOpen] =
-    useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
-  const menuRef =
-    useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // =========================
   // CLOSE MENU OUTSIDE CLICK
   // =========================
 
   useEffect(() => {
-    function handleClickOutside(
-      event: MouseEvent
-    ) {
+    function handleClickOutside(event: MouseEvent) {
       if (
         menuRef.current &&
         !menuRef.current.contains(
@@ -71,11 +67,13 @@ export default function NavbarClient({
         className="
           mx-auto
           flex
-          max-w-6xl
+          max-w-7xl
           items-center
           justify-between
           px-4
           py-4
+          sm:px-6
+          lg:px-8
         "
       >
         {/* =========================
@@ -113,14 +111,17 @@ export default function NavbarClient({
           className="
             hidden
             items-center
-            gap-7
+            gap-6
             text-sm
             font-medium
             text-foreground
             md:flex
           "
         >
-   
+          {/* =========================
+              PACKAGE
+          ========================= */}
+
           <Link
             href="/products/package"
             className="
@@ -132,19 +133,78 @@ export default function NavbarClient({
           </Link>
 
           {/* =========================
-              TOURS
+              TOUR
           ========================= */}
 
           <Link
-            href="/products/tours"
+            href="/products/tour"
             className="
-              font-semibold
               transition-colors
               hover:text-primary
             "
           >
             تورها
           </Link>
+
+          {/* =========================
+              TRAIN
+          ========================= */}
+
+          <Link
+            href="/products/train"
+            className="
+              transition-colors
+              hover:text-primary
+            "
+          >
+            بلیط قطار
+          </Link>
+
+          {/* =========================
+              FLIGHT
+          ========================= */}
+
+          <Link
+            href="/products/flight"
+            className="
+              transition-colors
+              hover:text-primary
+            "
+          >
+            بلیط هواپیما
+          </Link>
+
+          {/* =========================
+              ACCOMMODATION
+          ========================= */}
+
+          <Link
+            href="/products/accommodation"
+            className="
+              transition-colors
+              hover:text-primary
+            "
+          >
+            اقامتگاه
+          </Link>
+
+          {/* =========================
+              VISA
+          ========================= */}
+
+          <Link
+            href="/products/visa"
+            className="
+              transition-colors
+              hover:text-primary
+            "
+          >
+            ویزای توریستی
+          </Link>
+
+          {/* =========================
+              ABOUT
+          ========================= */}
 
           <Link
             href="/about"
@@ -156,6 +216,10 @@ export default function NavbarClient({
             درباره ما
           </Link>
 
+          {/* =========================
+              CONTACT
+          ========================= */}
+
           <Link
             href="/contact"
             className="
@@ -166,7 +230,9 @@ export default function NavbarClient({
             تماس با ما
           </Link>
 
-          {/* ADMIN */}
+          {/* =========================
+              ADMIN
+          ========================= */}
 
           {children}
         </div>
@@ -178,10 +244,13 @@ export default function NavbarClient({
         <button
           type="button"
           className="
+            rounded-lg
+            p-2
             text-2xl
             leading-none
             text-foreground
             transition-colors
+            hover:bg-muted
             hover:text-primary
             md:hidden
           "
@@ -215,76 +284,187 @@ export default function NavbarClient({
         <div
           ref={menuRef}
           className="
-            space-y-3
             border-t
             border-border
             bg-background
             px-4
-            pb-5
+            pb-6
             pt-4
             text-foreground
             md:hidden
           "
         >
-          <Link
-            href="/"
-            onClick={handleLinkClick}
-            className="
-              block
-              transition-colors
-              hover:text-primary
-            "
-          >
-            خانه
-          </Link>
+          <div className="space-y-1">
+            {/* HOME */}
 
-       
+            <Link
+              href="/"
+              onClick={handleLinkClick}
+              className="
+                block
+                rounded-lg
+                px-3
+                py-2.5
+                transition-colors
+                hover:bg-muted
+                hover:text-primary
+              "
+            >
+              خانه
+            </Link>
 
-     
-          {/* =========================
-              TOURS
-          ========================= */}
+            {/* PACKAGE */}
 
-          <Link
-            href="/products/tours"
-            onClick={handleLinkClick}
-            className="
-              block
-              font-semibold
-              transition-colors
-              hover:text-primary
-            "
-          >
-            تورها
-          </Link>
+            <Link
+              href="/products/package"
+              onClick={handleLinkClick}
+              className="
+                block
+                rounded-lg
+                px-3
+                py-2.5
+                transition-colors
+                hover:bg-muted
+                hover:text-primary
+              "
+            >
+              پکیج‌ها
+            </Link>
 
-          <Link
-            href="/about"
-            onClick={handleLinkClick}
-            className="
-              block
-              transition-colors
-              hover:text-primary
-            "
-          >
-            درباره ما
-          </Link>
+            {/* TOUR */}
 
-          <Link
-            href="/contact"
-            onClick={handleLinkClick}
-            className="
-              block
-              transition-colors
-              hover:text-primary
-            "
-          >
-            تماس با ما
-          </Link>
+            <Link
+              href="/products/tour"
+              onClick={handleLinkClick}
+              className="
+                block
+                rounded-lg
+                px-3
+                py-2.5
+                transition-colors
+                hover:bg-muted
+                hover:text-primary
+              "
+            >
+              تورها
+            </Link>
 
-          {/* ADMIN */}
+            {/* TRAIN */}
 
-          {children}
+            <Link
+              href="/products/train"
+              onClick={handleLinkClick}
+              className="
+                block
+                rounded-lg
+                px-3
+                py-2.5
+                transition-colors
+                hover:bg-muted
+                hover:text-primary
+              "
+            >
+              بلیط قطار
+            </Link>
+
+            {/* FLIGHT */}
+
+            <Link
+              href="/products/flight"
+              onClick={handleLinkClick}
+              className="
+                block
+                rounded-lg
+                px-3
+                py-2.5
+                transition-colors
+                hover:bg-muted
+                hover:text-primary
+              "
+            >
+              بلیط هواپیما
+            </Link>
+
+            {/* ACCOMMODATION */}
+
+            <Link
+              href="/products/accommodation"
+              onClick={handleLinkClick}
+              className="
+                block
+                rounded-lg
+                px-3
+                py-2.5
+                transition-colors
+                hover:bg-muted
+                hover:text-primary
+              "
+            >
+              اقامتگاه‌ها
+            </Link>
+
+            {/* VISA */}
+
+            <Link
+              href="/products/visa"
+              onClick={handleLinkClick}
+              className="
+                block
+                rounded-lg
+                px-3
+                py-2.5
+                transition-colors
+                hover:bg-muted
+                hover:text-primary
+              "
+            >
+              ویزای توریستی
+            </Link>
+
+            {/* DIVIDER */}
+
+            <div className="my-3 h-px bg-border" />
+
+            {/* ABOUT */}
+
+            <Link
+              href="/about"
+              onClick={handleLinkClick}
+              className="
+                block
+                rounded-lg
+                px-3
+                py-2.5
+                transition-colors
+                hover:bg-muted
+                hover:text-primary
+              "
+            >
+              درباره ما
+            </Link>
+
+            {/* CONTACT */}
+
+            <Link
+              href="/contact"
+              onClick={handleLinkClick}
+              className="
+                block
+                rounded-lg
+                px-3
+                py-2.5
+                transition-colors
+                hover:bg-muted
+                hover:text-primary
+              "
+            >
+              تماس با ما
+            </Link>
+
+            {/* ADMIN */}
+
+            {children}
+          </div>
         </div>
       )}
     </nav>

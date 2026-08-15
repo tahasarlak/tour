@@ -5,10 +5,11 @@ const prisma = new PrismaClient();
 
 async function main() {
   console.log("🌱 Starting seed...");
+  console.log("");
 
-  // ==========================================
+  // ======================================================
   // ADMIN
-  // ==========================================
+  // ======================================================
 
   const adminEmail = "admin@romdental.com";
   const adminPassword = "Admin123456!";
@@ -36,10 +37,11 @@ async function main() {
   console.log("✅ Admin created:");
   console.log(`   Email: ${admin.email}`);
   console.log(`   Password: ${adminPassword}`);
+  console.log("");
 
-  // ==========================================
+  // ======================================================
   // TOURS
-  // ==========================================
+  // ======================================================
 
   const tours = [
     {
@@ -68,8 +70,13 @@ async function main() {
 
       duration: "5 روز و 4 شب",
 
-      departureDate: new Date("2026-12-20T10:00:00"),
-      returnDate: new Date("2026-12-24T18:00:00"),
+      departureDate: new Date(
+        "2026-12-20T10:00:00"
+      ),
+
+      returnDate: new Date(
+        "2026-12-24T18:00:00"
+      ),
 
       capacity: 20,
       remainingCapacity: 12,
@@ -163,10 +170,6 @@ async function main() {
       isPublished: true,
     },
 
-    // ==========================================
-    // TOUR 2
-    // ==========================================
-
     {
       slug: "saint-petersburg-cultural-tour",
 
@@ -184,7 +187,9 @@ async function main() {
       description:
         "سفری متفاوت به سن‌پترزبورگ، یکی از زیباترین شهرهای روسیه، همراه با بازدید از موزه‌ها و بناهای تاریخی مشهور.",
 
-      image: "/images/tours/saint-petersburg.jpg",
+      image:
+        "/images/tours/saint-petersburg.jpg",
+
       thumbImage:
         "/images/tours/saint-petersburg-thumb.jpg",
 
@@ -194,8 +199,13 @@ async function main() {
 
       duration: "6 روز و 5 شب",
 
-      departureDate: new Date("2027-01-10T09:00:00"),
-      returnDate: new Date("2027-01-15T20:00:00"),
+      departureDate: new Date(
+        "2027-01-10T09:00:00"
+      ),
+
+      returnDate: new Date(
+        "2027-01-15T20:00:00"
+      ),
 
       capacity: 18,
       remainingCapacity: 8,
@@ -206,11 +216,9 @@ async function main() {
       transportation:
         "پرواز + ترانسفر شهری",
 
-      meals:
-        "صبحانه",
+      meals: "صبحانه",
 
-      guide:
-        "راهنمای فارسی زبان",
+      guide: "راهنمای فارسی زبان",
 
       meetingPoint:
         "فرودگاه سن‌پترزبورگ",
@@ -294,10 +302,6 @@ async function main() {
       isPublished: true,
     },
 
-    // ==========================================
-    // TOUR 3
-    // ==========================================
-
     {
       slug: "sochi-summer-tour",
 
@@ -325,8 +329,13 @@ async function main() {
 
       duration: "5 روز و 4 شب",
 
-      departureDate: new Date("2027-07-15T08:00:00"),
-      returnDate: new Date("2027-07-19T21:00:00"),
+      departureDate: new Date(
+        "2027-07-15T08:00:00"
+      ),
+
+      returnDate: new Date(
+        "2027-07-19T21:00:00"
+      ),
 
       capacity: 25,
       remainingCapacity: 17,
@@ -337,11 +346,9 @@ async function main() {
       transportation:
         "پرواز + اتوبوس گردشگری",
 
-      meals:
-        "صبحانه",
+      meals: "صبحانه",
 
-      guide:
-        "راهنمای تور",
+      guide: "راهنمای تور",
 
       meetingPoint:
         "فرودگاه سوچی",
@@ -421,9 +428,9 @@ async function main() {
     },
   ];
 
-  // ==========================================
+  // ======================================================
   // CREATE / UPDATE TOURS
-  // ==========================================
+  // ======================================================
 
   for (const tour of tours) {
     const result = await prisma.tour.upsert({
@@ -440,8 +447,899 @@ async function main() {
   }
 
   console.log("");
-  console.log("🎉 Seed completed successfully!");
+
+  // ======================================================
+  // TRAIN TICKETS
+  // ======================================================
+
+  const trainTickets = [
+    {
+      slug: "moscow-saint-petersburg-train",
+
+      name: "بلیط قطار مسکو به سن‌پترزبورگ",
+
+      price: "8500",
+      currency: "₽",
+
+      discountedPrice: "7500",
+      discountPercentage: 12,
+
+      shortDescription:
+        "سفر ریلی از مسکو به سن‌پترزبورگ با قطار سریع‌السیر و صندلی راحت.",
+
+      description:
+        "بلیط قطار سریع‌السیر از مسکو به سن‌پترزبورگ با امکان انتخاب کلاس و نوع صندلی.",
+
+      image: "/images/trains/moscow-spb.jpg",
+      thumbImage:
+        "/images/trains/moscow-spb-thumb.jpg",
+
+      origin: "مسکو",
+      destination: "سن‌پترزبورگ",
+
+      originCity: "مسکو",
+      destinationCity: "سن‌پترزبورگ",
+
+      originStation:
+        "Moscow Leningradsky Station",
+
+      destinationStation:
+        "Saint Petersburg Moskovsky Station",
+
+      originCode: "MOW",
+      destinationCode: "LED",
+
+      trainCompany: "RZD",
+      trainName: "Sapsan",
+      trainNumber: "752A",
+
+      trainType: "قطار سریع‌السیر",
+
+      departureDate: new Date(
+        "2026-11-15T07:30:00"
+      ),
+
+      arrivalDate: new Date(
+        "2026-11-15T11:25:00"
+      ),
+
+      departureTime: "07:30",
+      arrivalTime: "11:25",
+
+      duration: "3 ساعت و 55 دقیقه",
+
+      carriageType: "واگن صندلی",
+      seatType: "Economy",
+
+      capacity: 400,
+      remainingCapacity: 145,
+
+      baggage: "تا 36 کیلوگرم",
+
+      refundPolicy:
+        "امکان استرداد طبق قوانین شرکت راه‌آهن",
+
+      cancellationPolicy:
+        "لغو تا 24 ساعت قبل از حرکت با کسر جریمه",
+
+      facilities: [
+        "Wi-Fi",
+        "پریز برق",
+        "تهویه مطبوع",
+        "سرویس بهداشتی",
+      ],
+
+      requirements: [
+        "پاسپورت معتبر",
+        "حضور حداقل 30 دقیقه قبل از حرکت",
+      ],
+
+      isSpecial: true,
+      isPublished: true,
+
+      gallery: [
+        "/images/trains/train-1.jpg",
+        "/images/trains/train-2.jpg",
+      ],
+    },
+
+    {
+      slug: "moscow-kazan-train",
+
+      name: "بلیط قطار مسکو به کازان",
+
+      price: "6200",
+      currency: "₽",
+
+      discountedPrice: "5600",
+      discountPercentage: 10,
+
+      shortDescription:
+        "سفر شبانه با قطار از مسکو به کازان با امکانات مناسب.",
+
+      description:
+        "بلیط قطار مسکو به کازان برای سفر راحت و اقتصادی.",
+
+      image: "/images/trains/kazan.jpg",
+      thumbImage:
+        "/images/trains/kazan-thumb.jpg",
+
+      origin: "مسکو",
+      destination: "کازان",
+
+      originCity: "مسکو",
+      destinationCity: "کازان",
+
+      originStation:
+        "Kazan Railway Station",
+
+      destinationStation:
+        "Kazan Passenger Station",
+
+      originCode: "MOW",
+      destinationCode: "KZN",
+
+      trainCompany: "RZD",
+      trainName: "Kazan Express",
+      trainNumber: "024M",
+
+      trainType: "قطار بین‌شهری",
+
+      departureDate: new Date(
+        "2026-12-05T21:00:00"
+      ),
+
+      arrivalDate: new Date(
+        "2026-12-06T10:30:00"
+      ),
+
+      departureTime: "21:00",
+      arrivalTime: "10:30",
+
+      duration: "13 ساعت و 30 دقیقه",
+
+      carriageType: "کوپه",
+      seatType: "4 نفره",
+
+      capacity: 300,
+      remainingCapacity: 96,
+
+      baggage: "تا 36 کیلوگرم",
+
+      refundPolicy:
+        "طبق قوانین شرکت راه‌آهن",
+
+      cancellationPolicy:
+        "استرداد با کسر جریمه",
+
+      facilities: [
+        "تخت",
+        "تهویه مطبوع",
+        "سرویس بهداشتی",
+      ],
+
+      requirements: [
+        "پاسپورت معتبر",
+      ],
+
+      isSpecial: false,
+      isPublished: true,
+
+      gallery: [
+        "/images/trains/kazan-1.jpg",
+        "/images/trains/kazan-2.jpg",
+      ],
+    },
+  ];
+
+  // ======================================================
+  // CREATE / UPDATE TRAIN TICKETS
+  // ======================================================
+
+  for (const ticket of trainTickets) {
+    const result =
+      await prisma.trainTicket.upsert({
+        where: {
+          slug: ticket.slug,
+        },
+
+        update: ticket,
+
+        create: ticket,
+      });
+
+    console.log(
+      `🚆 Train: ${result.name}`
+    );
+  }
+
   console.log("");
+
+  // ======================================================
+  // FLIGHT TICKETS
+  // ======================================================
+
+  const flightTickets = [
+    {
+      slug: "moscow-istanbul-flight",
+
+      name: "پرواز مسکو به استانبول",
+
+      price: "28500",
+      currency: "₽",
+
+      discountedPrice: "24900",
+      discountPercentage: 13,
+
+      shortDescription:
+        "پرواز مستقیم مسکو به استانبول با ایرلاین معتبر.",
+
+      description:
+        "پرواز مستقیم از مسکو به استانبول با امکان حمل بار و انتخاب کلاس پروازی.",
+
+      image: "/images/flights/moscow-istanbul.jpg",
+
+      thumbImage:
+        "/images/flights/moscow-istanbul-thumb.jpg",
+
+      origin: "مسکو",
+      destination: "استانبول",
+
+      originCity: "مسکو",
+      destinationCity: "استانبول",
+
+      originAirport:
+        "Sheremetyevo International Airport",
+
+      destinationAirport:
+        "Istanbul Airport",
+
+      originAirportCode: "SVO",
+      destinationAirportCode: "IST",
+
+      airline: "Aeroflot",
+      airlineCode: "SU",
+
+      flightNumber: "SU213",
+
+      departureDate: new Date(
+        "2026-12-10T09:15:00"
+      ),
+
+      arrivalDate: new Date(
+        "2026-12-10T13:20:00"
+      ),
+
+      departureTime: "09:15",
+      arrivalTime: "13:20",
+
+      duration: "4 ساعت و 5 دقیقه",
+
+      cabinClass: "Economy",
+
+      baggage: "23 کیلوگرم",
+
+      handBaggage: "7 کیلوگرم",
+
+      stops: 0,
+
+      refundable: true,
+
+      refundPolicy:
+        "استرداد طبق قوانین ایرلاین",
+
+      cancellationPolicy:
+        "لغو با کسر جریمه",
+
+      facilities: [
+        "پذیرایی",
+        "سیستم سرگرمی",
+        "صندلی استاندارد",
+      ],
+
+      requirements: [
+        "پاسپورت معتبر",
+        "حضور حداقل 2 ساعت قبل از پرواز",
+      ],
+
+      capacity: 180,
+      remainingCapacity: 42,
+
+      isSpecial: true,
+      isPublished: true,
+
+      gallery: [
+        "/images/flights/flight-1.jpg",
+        "/images/flights/flight-2.jpg",
+      ],
+    },
+
+    {
+      slug: "moscow-dubai-flight",
+
+      name: "پرواز مسکو به دبی",
+
+      price: "33000",
+      currency: "₽",
+
+      discountedPrice: "29900",
+      discountPercentage: 9,
+
+      shortDescription:
+        "پرواز مسکو به دبی با امکان انتخاب کلاس اقتصادی و تجاری.",
+
+      description:
+        "پرواز بین‌المللی مسکو به دبی برای سفرهای تفریحی و تجاری.",
+
+      image: "/images/flights/moscow-dubai.jpg",
+
+      thumbImage:
+        "/images/flights/moscow-dubai-thumb.jpg",
+
+      origin: "مسکو",
+      destination: "دبی",
+
+      originCity: "مسکو",
+      destinationCity: "دبی",
+
+      originAirport:
+        "Domodedovo International Airport",
+
+      destinationAirport:
+        "Dubai International Airport",
+
+      originAirportCode: "DME",
+      destinationAirportCode: "DXB",
+
+      airline: "Emirates",
+      airlineCode: "EK",
+
+      flightNumber: "EK132",
+
+      departureDate: new Date(
+        "2027-01-20T14:30:00"
+      ),
+
+      arrivalDate: new Date(
+        "2027-01-20T21:50:00"
+      ),
+
+      departureTime: "14:30",
+      arrivalTime: "21:50",
+
+      duration: "5 ساعت و 20 دقیقه",
+
+      cabinClass: "Economy",
+
+      baggage: "30 کیلوگرم",
+
+      handBaggage: "7 کیلوگرم",
+
+      stops: 0,
+
+      refundable: true,
+
+      refundPolicy:
+        "طبق قوانین ایرلاین",
+
+      cancellationPolicy:
+        "لغو با کسر جریمه",
+
+      facilities: [
+        "پذیرایی",
+        "Wi-Fi",
+        "سیستم سرگرمی",
+      ],
+
+      requirements: [
+        "پاسپورت معتبر",
+      ],
+
+      capacity: 260,
+      remainingCapacity: 73,
+
+      isSpecial: false,
+      isPublished: true,
+
+      gallery: [
+        "/images/flights/dubai-1.jpg",
+        "/images/flights/dubai-2.jpg",
+      ],
+    },
+  ];
+
+  // ======================================================
+  // CREATE / UPDATE FLIGHTS
+  // ======================================================
+
+  for (const flight of flightTickets) {
+    const result =
+      await prisma.flightTicket.upsert({
+        where: {
+          slug: flight.slug,
+        },
+
+        update: flight,
+
+        create: flight,
+      });
+
+    console.log(
+      `✈️ Flight: ${result.name}`
+    );
+  }
+
+  console.log("");
+
+  // ======================================================
+  // ACCOMMODATIONS
+  // ======================================================
+
+  const accommodations = [
+    {
+      slug: "moscow-central-hotel",
+
+      name: "هتل مرکزی مسکو",
+
+      price: "12000",
+      currency: "₽",
+
+      discountedPrice: "9900",
+      discountPercentage: 18,
+
+      shortDescription:
+        "هتل 4 ستاره در مرکز مسکو نزدیک به جاذبه‌های اصلی شهر.",
+
+      description:
+        "هتل مدرن و مجهز در مرکز مسکو با دسترسی مناسب به مترو، مراکز خرید و جاذبه‌های گردشگری.",
+
+      country: "روسیه",
+      city: "مسکو",
+
+      address:
+        "Tverskaya Street, Moscow",
+
+      latitude: 55.757,
+      longitude: 37.615,
+
+      mapUrl:
+        "https://maps.google.com/",
+
+      image:
+        "/images/accommodations/moscow-hotel.jpg",
+
+      thumbImage:
+        "/images/accommodations/moscow-hotel-thumb.jpg",
+
+      gallery: [
+        "/images/accommodations/moscow-1.jpg",
+        "/images/accommodations/moscow-2.jpg",
+        "/images/accommodations/moscow-3.jpg",
+      ],
+
+      accommodationType: "هتل",
+
+      starRating: 4,
+
+      roomType:
+        "اتاق دبل استاندارد",
+
+      capacity: 2,
+
+      remainingCapacity: 8,
+
+      rooms: 50,
+
+      checkInTime: "14:00",
+      checkOutTime: "12:00",
+
+      minimumNights: 1,
+
+      mealPlan: "صبحانه",
+
+      amenities: [
+        "Wi-Fi رایگان",
+        "تهویه مطبوع",
+        "تلویزیون",
+        "مینی‌بار",
+        "حمام اختصاصی",
+      ],
+
+      services: [
+        "پذیرش 24 ساعته",
+        "خانه‌داری",
+        "ترانسفر فرودگاهی",
+      ],
+
+      cancellationPolicy:
+        "لغو رایگان تا 48 ساعت قبل از ورود",
+
+      houseRules:
+        "ورود حیوانات خانگی مجاز نیست.",
+
+      requirements: [
+        "پاسپورت معتبر",
+        "مدرک شناسایی",
+      ],
+
+      isSpecial: true,
+      isPublished: true,
+    },
+
+    {
+      slug: "saint-petersburg-hotel",
+
+      name: "هتل سن‌پترزبورگ سنتر",
+
+      price: "9500",
+      currency: "₽",
+
+      discountedPrice: "8200",
+      discountPercentage: 14,
+
+      shortDescription:
+        "اقامتگاه مناسب در مرکز سن‌پترزبورگ با دسترسی آسان به جاذبه‌های تاریخی.",
+
+      description:
+        "هتلی آرام و مجهز در مرکز سن‌پترزبورگ مناسب برای سفرهای خانوادگی و گردشگری.",
+
+      country: "روسیه",
+      city: "سن‌پترزبورگ",
+
+      address:
+        "Nevsky Prospect, Saint Petersburg",
+
+      latitude: 59.934,
+      longitude: 30.335,
+
+      mapUrl:
+        "https://maps.google.com/",
+
+      image:
+        "/images/accommodations/spb-hotel.jpg",
+
+      thumbImage:
+        "/images/accommodations/spb-hotel-thumb.jpg",
+
+      gallery: [
+        "/images/accommodations/spb-1.jpg",
+        "/images/accommodations/spb-2.jpg",
+      ],
+
+      accommodationType: "هتل",
+
+      starRating: 4,
+
+      roomType:
+        "اتاق دو نفره",
+
+      capacity: 2,
+
+      remainingCapacity: 12,
+
+      rooms: 70,
+
+      checkInTime: "14:00",
+      checkOutTime: "12:00",
+
+      minimumNights: 1,
+
+      mealPlan: "صبحانه",
+
+      amenities: [
+        "Wi-Fi",
+        "تهویه مطبوع",
+        "تلویزیون",
+        "حمام اختصاصی",
+      ],
+
+      services: [
+        "پذیرش 24 ساعته",
+        "خانه‌داری",
+      ],
+
+      cancellationPolicy:
+        "لغو رایگان تا 24 ساعت قبل از ورود",
+
+      houseRules:
+        "رعایت سکوت بعد از ساعت 23",
+
+      requirements: [
+        "پاسپورت معتبر",
+      ],
+
+      isSpecial: false,
+      isPublished: true,
+    },
+  ];
+
+  // ======================================================
+  // CREATE / UPDATE ACCOMMODATIONS
+  // ======================================================
+
+  for (const accommodation of accommodations) {
+    const result =
+      await prisma.accommodation.upsert({
+        where: {
+          slug: accommodation.slug,
+        },
+
+        update: accommodation,
+
+        create: accommodation,
+      });
+
+    console.log(
+      `🏨 Accommodation: ${result.name}`
+    );
+  }
+
+  console.log("");
+
+  // ======================================================
+  // TOURIST VISAS
+  // ======================================================
+
+  const touristVisas = [
+    {
+      slug: "russia-tourist-visa",
+
+      name: "ویزای توریستی روسیه",
+
+      price: "18000",
+      currency: "₽",
+
+      discountedPrice: "15500",
+      discountPercentage: 14,
+
+      shortDescription:
+        "خدمات اخذ ویزای توریستی روسیه با پشتیبانی در آماده‌سازی مدارک.",
+
+      description:
+        "خدمات درخواست ویزای توریستی روسیه شامل بررسی مدارک، آماده‌سازی پرونده و پیگیری مراحل درخواست.",
+
+      image:
+        "/images/visas/russia.jpg",
+
+      thumbImage:
+        "/images/visas/russia-thumb.jpg",
+
+      gallery: [
+        "/images/visas/russia-1.jpg",
+        "/images/visas/russia-2.jpg",
+      ],
+
+      country: "روسیه",
+
+      countryCode: "RU",
+
+      destination: "مسکو و سن‌پترزبورگ",
+
+      visaType: "توریستی",
+
+      entryType: "یک بار ورود",
+
+      validityPeriod:
+        "تا 30 روز",
+
+      stayDuration:
+        "حداکثر 30 روز",
+
+      processingTime:
+        "7 تا 15 روز کاری",
+
+      urgentProcessing: true,
+
+      urgentProcessingTime:
+        "3 تا 5 روز کاری",
+
+      requirements: [
+        "پاسپورت معتبر",
+        "فرم درخواست ویزا",
+        "عکس پرسنلی",
+        "رزرو هتل",
+        "رزرو بلیط رفت و برگشت",
+        "بیمه مسافرتی",
+      ],
+
+      requiredDocuments: [
+        "اصل پاسپورت",
+        "عکس پرسنلی",
+        "فرم درخواست",
+        "بیمه مسافرتی",
+      ],
+
+      additionalDocuments: [
+        "رزرو هتل",
+        "رزرو پرواز",
+        "مدارک مالی در صورت نیاز",
+      ],
+
+      included: [
+        "بررسی مدارک",
+        "تکمیل فرم درخواست",
+        "مشاوره ویزا",
+        "پیگیری پرونده",
+      ],
+
+      excluded: [
+        "هزینه سفارت",
+        "هزینه ترجمه رسمی",
+        "هزینه بیمه",
+      ],
+
+      interviewRequired: false,
+
+      biometricsRequired: false,
+
+      cancellationPolicy:
+        "پس از ارسال پرونده، هزینه خدمات قابل استرداد نیست.",
+
+      notes:
+        "مدت بررسی پرونده ممکن است بر اساس شرایط سفارت تغییر کند.",
+
+      isSpecial: true,
+      isPublished: true,
+    },
+
+    {
+      slug: "turkey-tourist-visa",
+
+      name: "خدمات ویزای توریستی ترکیه",
+
+      price: "12500",
+      currency: "₽",
+
+      discountedPrice: "11000",
+      discountPercentage: 12,
+
+      shortDescription:
+        "خدمات مشاوره و آماده‌سازی مدارک سفر توریستی به ترکیه.",
+
+      description:
+        "خدمات مربوط به آماده‌سازی مدارک و مشاوره برای سفر توریستی به ترکیه.",
+
+      image:
+        "/images/visas/turkey.jpg",
+
+      thumbImage:
+        "/images/visas/turkey-thumb.jpg",
+
+      gallery: [
+        "/images/visas/turkey-1.jpg",
+        "/images/visas/turkey-2.jpg",
+      ],
+
+      country: "ترکیه",
+
+      countryCode: "TR",
+
+      destination:
+        "استانبول و شهرهای توریستی ترکیه",
+
+      visaType: "توریستی",
+
+      entryType: "یک بار ورود",
+
+      validityPeriod:
+        "بسته به پرونده",
+
+      stayDuration:
+        "طبق مجوز صادرشده",
+
+      processingTime:
+        "5 تا 12 روز کاری",
+
+      urgentProcessing: true,
+
+      urgentProcessingTime:
+        "2 تا 5 روز کاری",
+
+      requirements: [
+        "پاسپورت معتبر",
+        "عکس پرسنلی",
+        "فرم درخواست",
+        "بیمه مسافرتی",
+      ],
+
+      requiredDocuments: [
+        "پاسپورت",
+        "عکس",
+        "فرم درخواست",
+      ],
+
+      additionalDocuments: [
+        "رزرو هتل",
+        "رزرو پرواز",
+        "مدارک مالی",
+      ],
+
+      included: [
+        "مشاوره",
+        "بررسی مدارک",
+        "آماده‌سازی پرونده",
+      ],
+
+      excluded: [
+        "هزینه‌های دولتی",
+        "ترجمه مدارک",
+        "بیمه",
+      ],
+
+      interviewRequired: false,
+
+      biometricsRequired: false,
+
+      cancellationPolicy:
+        "پس از شروع فرآیند، هزینه خدمات قابل استرداد نیست.",
+
+      notes:
+        "شرایط ویزا بر اساس تابعیت متقاضی متفاوت است.",
+
+      isSpecial: false,
+      isPublished: true,
+    },
+  ];
+
+  // ======================================================
+  // CREATE / UPDATE VISAS
+  // ======================================================
+
+  for (const visa of touristVisas) {
+    const result =
+      await prisma.touristVisa.upsert({
+        where: {
+          slug: visa.slug,
+        },
+
+        update: visa,
+
+        create: visa,
+      });
+
+    console.log(
+      `🛂 Visa: ${result.name}`
+    );
+  }
+
+  console.log("");
+
+  // ======================================================
+  // FINISHED
+  // ======================================================
+
+  console.log(
+    "=========================================="
+  );
+
+  console.log(
+    "🎉 Seed completed successfully!"
+  );
+
+  console.log(
+    "=========================================="
+  );
+
+  console.log("");
+
+  console.log("📊 Seed summary:");
+  console.log("   👤 Admin: 1");
+  console.log(`   🧳 Tours: ${tours.length}`);
+  console.log(
+    `   🚆 Train tickets: ${trainTickets.length}`
+  );
+  console.log(
+    `   ✈️ Flight tickets: ${flightTickets.length}`
+  );
+  console.log(
+    `   🏨 Accommodations: ${accommodations.length}`
+  );
+  console.log(
+    `   🛂 Tourist visas: ${touristVisas.length}`
+  );
+
+  console.log("");
+
   console.log("🔐 Admin login:");
   console.log(`   Email: ${adminEmail}`);
   console.log(`   Password: ${adminPassword}`);
@@ -449,6 +1347,7 @@ async function main() {
 
 main()
   .catch((error) => {
+    console.error("");
     console.error("❌ Seed failed:");
     console.error(error);
 

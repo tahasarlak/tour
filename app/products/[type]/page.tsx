@@ -6,9 +6,34 @@ import { getAdminSession } from "@/lib/auth";
 import ProductCard from "@/components/ProductCard";
 import CreateButton from "@/components/Button/CreateButton";
 
-export default async function TourListPage() {
+import {
+  PRODUCT_TYPES,
+  type ProductType,
+} from "@/lib/product-types";
+
+type Props = {
+  params: Promise<{
+    type: string;
+  }>;
+};
+
+export default async function ProductListPage({
+  params,
+}: Props) {
+  const { type } = await params;
+
   // ==========================================
-  // ADMIN SESSION
+  // VALIDATE TYPE
+  // ==========================================
+
+  if (!PRODUCT_TYPES.includes(type as ProductType)) {
+    notFound();
+  }
+
+  const productType = type as ProductType;
+
+  // ==========================================
+  // ADMIN
   // ==========================================
 
   const session = await getAdminSession();
@@ -16,28 +41,146 @@ export default async function TourListPage() {
   const isAdmin = !!session;
 
   // ==========================================
-  // TOURS
+  // WHERE
   // ==========================================
 
-  const tours = await prisma.tour.findMany({
-    where: isAdmin
-      ? undefined
-      : {
-          isPublished: true,
+  const where = isAdmin
+    ? undefined
+    : {
+        isPublished: true,
+      };
+
+  // ==========================================
+  // PRODUCTS
+  // ==========================================
+
+  let products;
+
+  switch (productType) {
+    // ========================================
+    // TOUR
+    // ========================================
+
+    case "tour":
+      products = await prisma.tour.findMany({
+        where,
+        orderBy: {
+          createdAt: "desc",
         },
+      });
+      break;
 
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+    // ========================================
+    // TRAIN TICKET
+    // ========================================
+
+    case "train":
+      products =
+        await prisma.trainTicket.findMany({
+          where,
+          orderBy: {
+            createdAt: "desc",
+          },
+        });
+      break;
+
+    // ========================================
+    // FLIGHT TICKET
+    // ========================================
+
+    case "flight":
+      products =
+        await prisma.flightTicket.findMany({
+          where,
+          orderBy: {
+            createdAt: "desc",
+          },
+        });
+      break;
+
+    // ========================================
+    // ACCOMMODATION
+    // ========================================
+
+    case "accommodation":
+      products =
+        await prisma.accommodation.findMany({
+          where,
+          orderBy: {
+            createdAt: "desc",
+          },
+        });
+      break;
+
+    // ========================================
+    // TOURIST VISA
+    // ========================================
+
+    case "visa":
+      products =
+        await prisma.touristVisa.findMany({
+          where,
+          orderBy: {
+            createdAt: "desc",
+          },
+        });
+      break;
+
+    default:
+      notFound();
+  }
 
   // ==========================================
-  // NO TOURS
+  // NO PRODUCTS
   // ==========================================
 
-  if (tours.length === 0) {
+  if (products.length === 0) {
     notFound();
   }
+
+  // ==========================================
+  // TITLES
+  // ==========================================
+
+  const titles: Record<ProductType, string> = {
+    tour: "همه تورها",
+
+    train: "بلیط‌های قطار",
+
+    flight: "بلیط‌های هواپیما",
+
+    accommodation: "اقامتگاه‌ها",
+
+    visa: "ویزای توریستی",
+  };
+
+  // ==========================================
+  // DESCRIPTIONS
+  // ==========================================
+
+  const descriptions: Record<
+    ProductType,
+    string
+  > = {
+    tour:
+      "تورهای گردشگری را مشاهده کنید و مقصد مناسب خود را برای یک سفر خاطره‌انگیز انتخاب نمایید.",
+
+    train:
+      "بلیط‌های قطار را مشاهده کنید و مسیر و زمان مناسب سفر ریلی خود را انتخاب نمایید.",
+
+    flight:
+      "بلیط‌های هواپیما را مشاهده کنید و پرواز مناسب خود را با بهترین شرایط انتخاب نمایید.",
+
+    accommodation:
+      "اقامتگاه‌های موجود را مشاهده کنید و هتل یا محل اقامت مناسب خود را برای سفر انتخاب نمایید.",
+
+    visa:
+      "خدمات ویزای توریستی کشورهای مختلف را مشاهده کنید و درخواست ویزای مناسب خود را ثبت نمایید.",
+  };
+
+  // ==========================================
+  // RENDER
+  // ==========================================
 
   return (
     <main
@@ -81,7 +224,7 @@ export default async function TourListPage() {
               text-primary
             "
           >
-            تورهای گردشگری
+            خدمات سفر
           </p>
 
           <h1
@@ -94,7 +237,7 @@ export default async function TourListPage() {
               md:text-6xl
             "
           >
-            همه تورها
+            {titles[productType]}
           </h1>
 
           <p
@@ -107,24 +250,24 @@ export default async function TourListPage() {
               sm:text-lg
             "
           >
-            لیست تورهای گردشگری را مشاهده کنید
-            و مقصد مناسب خود را برای یک سفر
-            خاطره‌انگیز انتخاب نمایید.
+            {descriptions[productType]}
           </p>
 
           {/* ====================================
-              CREATE TOUR
+              CREATE
           ==================================== */}
 
           {isAdmin && (
             <div className="mt-8 flex justify-center">
-              <CreateButton type="tour" />
+              <CreateButton
+                type={productType}
+              />
             </div>
           )}
         </header>
 
         {/* ======================================
-            TOURS
+            PRODUCTS
         ====================================== */}
 
         <div
@@ -137,38 +280,46 @@ export default async function TourListPage() {
             lg:grid-cols-3
           "
         >
-          {tours.map((tour) => (
-            <ProductCard
-              key={tour.id}
-              product={{
-                id: tour.id,
-                slug: tour.slug,
-                name: tour.name,
+       {products.map((product) => (
+  <ProductCard
+    key={product.id}
+    product={{
+      id: product.id,
 
-                shortDescription:
-                  tour.shortDescription,
+      slug: product.slug,
 
-                image: tour.image,
+      name: product.name,
 
-                price: tour.price,
-                currency: tour.currency,
+      shortDescription:
+        product.shortDescription,
 
-                discountPercentage:
-                  tour.discountPercentage,
+      image: product.image,
 
-                discountedPrice:
-                  tour.discountedPrice,
+      // Prisma Decimal → number
+      price: Number(product.price),
 
-                isPublished:
-                  tour.isPublished,
+      currency:
+        product.currency,
 
-                isSpecial:
-                  tour.isSpecial,
-              }}
-              type="tour"
-              showAdminActions={isAdmin}
-            />
-          ))}
+      discountPercentage:
+        product.discountPercentage,
+
+      // Prisma Decimal → number | null
+      discountedPrice:
+        product.discountedPrice !== null
+          ? Number(product.discountedPrice)
+          : null,
+
+      isPublished:
+        product.isPublished,
+
+      isSpecial:
+        product.isSpecial,
+    }}
+    type={productType}
+    showAdminActions={isAdmin}
+  />
+))}
         </div>
       </div>
     </main>

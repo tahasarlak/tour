@@ -8,6 +8,7 @@ import BackLink from "../Button/BackLinkButton";
 type Product = {
   id: number;
   name: string;
+
   image: string | null;
 
   price: number;
@@ -15,7 +16,9 @@ type Product = {
   discountPercentage: number | null;
 
   currency: string | null;
-  duration: string | null;
+
+  // فقط بعضی محصولات این فیلد را دارند
+  duration?: string | null;
 
   shortDescription: string | null;
   description: string | null;
@@ -27,9 +30,25 @@ type Product = {
 };
 
 type Props = {
-  type: string;
+  type:
+    | "tour"
+    | "train"
+    | "flight"
+    | "accommodation"
+    | "visa"
+    | string;
+
   product: Product;
+
   isAdmin: boolean;
+};
+
+const typeLabels: Record<string, string> = {
+  tour: "تور",
+  train: "بلیط قطار",
+  flight: "بلیط هواپیما",
+  accommodation: "اقامتگاه",
+  visa: "ویزای توریستی",
 };
 
 export default function ProductPageContent({
@@ -39,6 +58,9 @@ export default function ProductPageContent({
 }: Props) {
   const productImage =
     product.image || "/images/default-product.jpg";
+
+  const typeLabel =
+    typeLabels[type] || "محصول";
 
   return (
     <main
@@ -54,11 +76,11 @@ export default function ProductPageContent({
 
       <BackLink
         href={`/products/${type}`}
-        label={`بازگشت به ${type}`}
+        label={`بازگشت به ${typeLabel}`}
       />
 
       {/* =========================
-          ADMIN ACTIONS
+          ADMIN
       ========================= */}
 
       {isAdmin && (
@@ -73,12 +95,12 @@ export default function ProductPageContent({
             lg:px-8
           "
         >
-          {/* Admin buttons can be added here */}
+          {/* Admin buttons */}
         </div>
       )}
 
       {/* =========================
-          MAIN PRODUCT
+          MAIN
       ========================= */}
 
       <div
@@ -106,7 +128,6 @@ export default function ProductPageContent({
         >
           {/* =========================
               LEFT
-              IMAGE + REGISTRATION
           ========================= */}
 
           <section
@@ -119,7 +140,7 @@ export default function ProductPageContent({
           >
             <div className="space-y-5">
 
-              {/* IMAGE CARD */}
+              {/* IMAGE */}
 
               <div
                 className="
@@ -179,13 +200,11 @@ export default function ProductPageContent({
                   type={type}
                 />
               </div>
-
             </div>
           </section>
 
           {/* =========================
               RIGHT
-              PRODUCT INFORMATION
           ========================= */}
 
           <section className="min-w-0">
@@ -216,11 +235,23 @@ export default function ProductPageContent({
                     product.discountPercentage
                   }
                   currency={product.currency}
-                  duration={product.duration}
-                  description={product.description}
+
+                  /*
+                   * duration فقط برای تور وجود دارد.
+                   * برای بقیه محصولات undefined ارسال می‌شود.
+                   */
+                  duration={
+                    product.duration ?? null
+                  }
+
+                  description={
+                    product.description
+                  }
+
                   shortDescription={
                     product.shortDescription
                   }
+
                   type={type}
                   isAdmin={isAdmin}
                 />

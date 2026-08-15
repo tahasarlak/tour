@@ -16,14 +16,60 @@ export default async function HomePage() {
       isSpecial: true,
       isPublished: true,
     },
+
     orderBy: {
       createdAt: "desc",
     },
+
     take: 3,
   });
 
+  // ==========================================
+  // NORMALIZE PRISMA DATA
+  // ==========================================
+  // Prisma Decimal را به number تبدیل می‌کنیم
+  // تا کامپوننت‌های UI به Prisma وابسته نباشند.
+
+  const normalizedFeaturedTours =
+    featuredTours.map((tour) => ({
+      id: tour.id,
+
+      slug: tour.slug,
+
+      name: tour.name,
+
+      shortDescription:
+        tour.shortDescription,
+
+      image: tour.image,
+
+      price: Number(tour.price),
+
+      currency: tour.currency,
+
+      discountPercentage:
+        tour.discountPercentage,
+
+      discountedPrice:
+        tour.discountedPrice !== null
+          ? Number(tour.discountedPrice)
+          : null,
+
+      isPublished:
+        tour.isPublished,
+
+      isSpecial:
+        tour.isSpecial,
+    }));
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div
+      className="
+        min-h-screen
+        bg-background
+        text-foreground
+      "
+    >
       {/* ==========================================
           HERO
       ========================================== */}
@@ -135,7 +181,7 @@ export default async function HomePage() {
             {/* Tours */}
 
             <Link
-              href="/products/tours"
+              href="/products/tour"
               className="
                 rounded-xl
                 bg-primary
@@ -183,7 +229,14 @@ export default async function HomePage() {
           FEATURED TOURS
       ========================================== */}
 
-      <section className="mx-auto max-w-6xl px-4 py-16">
+      <section
+        className="
+          mx-auto
+          max-w-6xl
+          px-4
+          py-16
+        "
+      >
         {/* Header */}
 
         <div className="mb-12 text-center">
@@ -212,19 +265,29 @@ export default async function HomePage() {
             تورهای ویژه
           </h2>
 
-          <p className="text-muted-foreground">
+          <p
+            className="
+              text-muted-foreground
+            "
+          >
             منتخب بهترین تورهای گردشگری برای یک
             سفر به‌یادماندنی
           </p>
         </div>
 
-        {/* Mobile */}
+        {/* ======================================
+            MOBILE SLIDER
+        ====================================== */}
 
         <div className="md:hidden">
-          <FeaturedSlider products={featuredTours} />
+          <FeaturedSlider
+            products={normalizedFeaturedTours}
+          />
         </div>
 
-        {/* Tablet / Desktop */}
+        {/* ======================================
+            TABLET / DESKTOP
+        ====================================== */}
 
         <div
           className="
@@ -235,37 +298,27 @@ export default async function HomePage() {
             md:grid-cols-3
           "
         >
-          {featuredTours.map((tour) => (
+          {normalizedFeaturedTours.map((tour) => (
             <ProductCard
               key={tour.id}
-              product={{
-                id: tour.id,
-                slug: tour.slug,
-                name: tour.name,
-                shortDescription:
-                  tour.shortDescription,
-                image: tour.image,
-                price: tour.price,
-                currency: tour.currency,
-                discountPercentage:
-                  tour.discountPercentage,
-                discountedPrice:
-                  tour.discountedPrice,
-                isPublished:
-                  tour.isPublished,
-                isSpecial:
-                  tour.isSpecial,
-              }}
+              product={tour}
               type="tour"
             />
           ))}
         </div>
 
-        {/* All Tours */}
+        {/* ======================================
+            ALL TOURS
+        ====================================== */}
 
-        <div className="mt-10 text-center">
+        <div
+          className="
+            mt-10
+            text-center
+          "
+        >
           <Link
-            href="/products/tours"
+            href="/products/tour"
             className="
               inline-block
               rounded-xl
@@ -289,8 +342,22 @@ export default async function HomePage() {
           WHY US
       ========================================== */}
 
-      <section className="mx-auto max-w-6xl px-4 py-16">
-        <div className="mb-12 text-center">
+      <section
+        className="
+          mx-auto
+          max-w-6xl
+          px-4
+          py-16
+        "
+      >
+        {/* Header */}
+
+        <div
+          className="
+            mb-12
+            text-center
+          "
+        >
           <p
             className="
               mb-3
@@ -329,10 +396,21 @@ export default async function HomePage() {
           </p>
         </div>
 
-        {/* Benefits */}
+        {/* ======================================
+            BENEFITS
+        ====================================== */}
 
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-          {/* 1 */}
+        <div
+          className="
+            grid
+            grid-cols-1
+            gap-8
+            md:grid-cols-3
+          "
+        >
+          {/* ====================================
+              1
+          ==================================== */}
 
           <div
             className="
@@ -383,7 +461,9 @@ export default async function HomePage() {
             </p>
           </div>
 
-          {/* 2 */}
+          {/* ====================================
+              2
+          ==================================== */}
 
           <div
             className="
@@ -433,7 +513,9 @@ export default async function HomePage() {
             </p>
           </div>
 
-          {/* 3 */}
+          {/* ====================================
+              3
+          ==================================== */}
 
           <div
             className="
@@ -485,12 +567,18 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {/* CTA */}
+        {/* ======================================
+            CTA
+        ====================================== */}
 
-        <div className="mt-12 text-center">
+        <div
+          className="
+            mt-12
+            text-center
+          "
+        >
           <Link
-                        href="/products/tours"
-
+            href="/products/tour"
             className="
               inline-block
               rounded-xl
