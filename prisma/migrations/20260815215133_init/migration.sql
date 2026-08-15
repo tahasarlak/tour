@@ -1,12 +1,3 @@
-/*
-  Warnings:
-
-  - The `discountedPrice` column on the `tours` table would be dropped and recreated. This will lead to data loss if there is data in the column.
-  - Added the required column `updatedAt` to the `admins` table without a default value. This is not possible if the table is not empty.
-  - Added the required column `updatedAt` to the `tours` table without a default value. This is not possible if the table is not empty.
-  - Changed the type of `price` on the `tours` table. No cast exists, the column would be dropped and recreated, which cannot be done if there is data, since the column is required.
-
-*/
 -- CreateEnum
 CREATE TYPE "ProductType" AS ENUM ('TOUR', 'TRAIN', 'FLIGHT', 'ACCOMMODATION', 'VISA');
 
@@ -19,15 +10,46 @@ CREATE TYPE "PaymentStatus" AS ENUM ('UNPAID', 'PENDING', 'PAID', 'FAILED', 'REF
 -- CreateEnum
 CREATE TYPE "BookingType" AS ENUM ('TOUR', 'TRAIN', 'FLIGHT', 'ACCOMMODATION', 'VISA');
 
--- AlterTable
-ALTER TABLE "admins" ADD COLUMN     "updatedAt" TIMESTAMP(3) NOT NULL;
+-- CreateTable
+CREATE TABLE "tours" (
+    "id" SERIAL NOT NULL,
+    "slug" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "currency" TEXT NOT NULL DEFAULT 'تومان',
+    "discountPercentage" INTEGER NOT NULL DEFAULT 0,
+    "shortDescription" TEXT,
+    "description" TEXT,
+    "image" TEXT,
+    "thumbImage" TEXT,
+    "destination" TEXT NOT NULL,
+    "country" TEXT,
+    "city" TEXT,
+    "duration" TEXT,
+    "departureDate" TIMESTAMP(3),
+    "returnDate" TIMESTAMP(3),
+    "capacity" INTEGER,
+    "remainingCapacity" INTEGER,
+    "accommodation" TEXT,
+    "transportation" TEXT,
+    "meals" TEXT,
+    "guide" TEXT,
+    "meetingPoint" TEXT,
+    "mapUrl" TEXT,
+    "highlights" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "included" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "excluded" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "requirements" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "itinerary" JSONB NOT NULL DEFAULT '[]',
+    "gallery" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "isSpecial" BOOLEAN NOT NULL DEFAULT false,
+    "isPublished" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "price" DECIMAL(12,2) NOT NULL,
+    "discountedPrice" DECIMAL(12,2),
 
--- AlterTable
-ALTER TABLE "tours" ADD COLUMN     "updatedAt" TIMESTAMP(3) NOT NULL,
-DROP COLUMN "price",
-ADD COLUMN     "price" DECIMAL(12,2) NOT NULL,
-DROP COLUMN "discountedPrice",
-ADD COLUMN     "discountedPrice" DECIMAL(12,2);
+    CONSTRAINT "tours_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable
 CREATE TABLE "train_tickets" (
@@ -35,7 +57,7 @@ CREATE TABLE "train_tickets" (
     "slug" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "price" DECIMAL(12,2) NOT NULL,
-    "currency" TEXT NOT NULL DEFAULT '₽',
+    "currency" TEXT NOT NULL DEFAULT 'تومان',
     "discountedPrice" DECIMAL(12,2),
     "discountPercentage" INTEGER NOT NULL DEFAULT 0,
     "shortDescription" TEXT,
@@ -83,7 +105,7 @@ CREATE TABLE "flight_tickets" (
     "slug" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "price" DECIMAL(12,2) NOT NULL,
-    "currency" TEXT NOT NULL DEFAULT '₽',
+    "currency" TEXT NOT NULL DEFAULT 'تومان',
     "discountedPrice" DECIMAL(12,2),
     "discountPercentage" INTEGER NOT NULL DEFAULT 0,
     "shortDescription" TEXT,
@@ -132,7 +154,7 @@ CREATE TABLE "accommodations" (
     "slug" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "price" DECIMAL(12,2) NOT NULL,
-    "currency" TEXT NOT NULL DEFAULT '₽',
+    "currency" TEXT NOT NULL DEFAULT 'تومان',
     "discountedPrice" DECIMAL(12,2),
     "discountPercentage" INTEGER NOT NULL DEFAULT 0,
     "shortDescription" TEXT,
@@ -175,7 +197,7 @@ CREATE TABLE "tourist_visas" (
     "slug" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "price" DECIMAL(12,2) NOT NULL,
-    "currency" TEXT NOT NULL DEFAULT '₽',
+    "currency" TEXT NOT NULL DEFAULT 'تومان',
     "discountedPrice" DECIMAL(12,2),
     "discountPercentage" INTEGER NOT NULL DEFAULT 0,
     "shortDescription" TEXT,
@@ -230,7 +252,7 @@ CREATE TABLE "bookings" (
     "quantity" INTEGER NOT NULL DEFAULT 1,
     "unitPrice" DECIMAL(12,2) NOT NULL,
     "totalPrice" DECIMAL(12,2) NOT NULL,
-    "currency" TEXT NOT NULL DEFAULT '₽',
+    "currency" TEXT NOT NULL DEFAULT 'تومان',
     "tourId" INTEGER,
     "trainTicketId" INTEGER,
     "flightTicketId" INTEGER,
@@ -247,6 +269,35 @@ CREATE TABLE "bookings" (
 
     CONSTRAINT "bookings_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateTable
+CREATE TABLE "admins" (
+    "id" SERIAL NOT NULL,
+    "email" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "admins_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "tours_slug_key" ON "tours"("slug");
+
+-- CreateIndex
+CREATE INDEX "tours_isPublished_idx" ON "tours"("isPublished");
+
+-- CreateIndex
+CREATE INDEX "tours_destination_idx" ON "tours"("destination");
+
+-- CreateIndex
+CREATE INDEX "tours_country_idx" ON "tours"("country");
+
+-- CreateIndex
+CREATE INDEX "tours_city_idx" ON "tours"("city");
+
+-- CreateIndex
+CREATE INDEX "tours_departureDate_idx" ON "tours"("departureDate");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "train_tickets_slug_key" ON "train_tickets"("slug");
@@ -333,19 +384,19 @@ CREATE INDEX "bookings_email_idx" ON "bookings"("email");
 CREATE INDEX "bookings_createdAt_idx" ON "bookings"("createdAt");
 
 -- CreateIndex
-CREATE INDEX "tours_departureDate_idx" ON "tours"("departureDate");
-
--- AddForeignKey
-ALTER TABLE "bookings" ADD CONSTRAINT "bookings_tourId_fkey" FOREIGN KEY ("tourId") REFERENCES "tours"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "bookings" ADD CONSTRAINT "bookings_trainTicketId_fkey" FOREIGN KEY ("trainTicketId") REFERENCES "train_tickets"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "bookings" ADD CONSTRAINT "bookings_flightTicketId_fkey" FOREIGN KEY ("flightTicketId") REFERENCES "flight_tickets"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+CREATE UNIQUE INDEX "admins_email_key" ON "admins"("email");
 
 -- AddForeignKey
 ALTER TABLE "bookings" ADD CONSTRAINT "bookings_accommodationId_fkey" FOREIGN KEY ("accommodationId") REFERENCES "accommodations"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "bookings" ADD CONSTRAINT "bookings_flightTicketId_fkey" FOREIGN KEY ("flightTicketId") REFERENCES "flight_tickets"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "bookings" ADD CONSTRAINT "bookings_tourId_fkey" FOREIGN KEY ("tourId") REFERENCES "tours"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "bookings" ADD CONSTRAINT "bookings_touristVisaId_fkey" FOREIGN KEY ("touristVisaId") REFERENCES "tourist_visas"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "bookings" ADD CONSTRAINT "bookings_trainTicketId_fkey" FOREIGN KEY ("trainTicketId") REFERENCES "train_tickets"("id") ON DELETE SET NULL ON UPDATE CASCADE;

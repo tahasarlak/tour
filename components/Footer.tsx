@@ -62,7 +62,7 @@ export default function Footer() {
             </Link>
 
             <Link
-              href="/products/tours"
+              href="/products/tour"
               className="block transition-colors hover:text-primary"
             >
               همه تورها
@@ -95,7 +95,7 @@ export default function Footer() {
 
           <div className="space-y-2 text-sm text-muted-foreground">
             <Link
-              href="/products/tours"
+              href="/products/tour"
               className="block transition-colors hover:text-primary"
             >
               مشاهده تورها و مقصدها
@@ -123,7 +123,7 @@ export default function Footer() {
             {/* WhatsApp */}
 
             <Link
-              href="https://wa.me/79254212300"
+              href="https://wa.me/989171050134"
               target="_blank"
               rel="noopener noreferrer"
               className="
@@ -166,7 +166,8 @@ export default function Footer() {
          {/* Bale */}
 
 <Link
-  href="https://ble.ir/romdental"
+    href="https://ble.ir/nrasteh"
+
   target="_blank"
   rel="noopener noreferrer"
   aria-label="پیام در بله"
@@ -214,7 +215,7 @@ export default function Footer() {
             {/* Phone */}
 
             <Link
-              href="tel:+79254212300"
+              href="tel:+989171050134"
               className="
                 group
                 flex
@@ -261,11 +262,9 @@ export default function Footer() {
               text-muted-foreground
             "
           >
-            <p dir="ltr">+79254212300</p>
+            <p dir="ltr">+989171050134</p>
 
-            <p>
-              romdental2028@gmail.com
-            </p>
+         
           </div>
         </div>
       </div>

@@ -36,9 +36,14 @@ export async function generateStaticParams() {
     tours,
     trainTickets,
     flightTickets,
+    busTickets,
     accommodations,
     touristVisas,
   ] = await Promise.all([
+    // =========================
+    // TOURS
+    // =========================
+
     prisma.tour.findMany({
       where: {
         isPublished: true,
@@ -47,6 +52,10 @@ export async function generateStaticParams() {
         slug: true,
       },
     }),
+
+    // =========================
+    // TRAIN
+    // =========================
 
     prisma.trainTicket.findMany({
       where: {
@@ -57,6 +66,10 @@ export async function generateStaticParams() {
       },
     }),
 
+    // =========================
+    // FLIGHT
+    // =========================
+
     prisma.flightTicket.findMany({
       where: {
         isPublished: true,
@@ -66,6 +79,23 @@ export async function generateStaticParams() {
       },
     }),
 
+    // =========================
+    // BUS
+    // =========================
+
+    prisma.busTicket.findMany({
+      where: {
+        isPublished: true,
+      },
+      select: {
+        slug: true,
+      },
+    }),
+
+    // =========================
+    // ACCOMMODATION
+    // =========================
+
     prisma.accommodation.findMany({
       where: {
         isPublished: true,
@@ -74,6 +104,10 @@ export async function generateStaticParams() {
         slug: true,
       },
     }),
+
+    // =========================
+    // VISA
+    // =========================
 
     prisma.touristVisa.findMany({
       where: {
@@ -110,6 +144,15 @@ export async function generateStaticParams() {
 
     ...flightTickets.map((item) => ({
       type: "flight",
+      slug: item.slug,
+    })),
+
+    // =========================
+    // BUS
+    // =========================
+
+    ...busTickets.map((item) => ({
+      type: "bus",
       slug: item.slug,
     })),
 
@@ -199,6 +242,19 @@ export default async function ProductPage({
     case "flight":
       product =
         await prisma.flightTicket.findUnique({
+          where: {
+            slug,
+          },
+        });
+      break;
+
+    // ======================================
+    // BUS TICKET
+    // ======================================
+
+    case "bus":
+      product =
+        await prisma.busTicket.findUnique({
           where: {
             slug,
           },

@@ -86,36 +86,7 @@ export default function ProductImage({
         </div>
       </div>
 
-      {showDiscount && (
-        <div className="absolute right-3 top-3 z-50 sm:right-4 sm:top-4">
-          <div
-            className="
-              rounded-full
-              border-primary/30
-              bg-primary
-              px-3
-              py-1.5
-              text-xs
-              font-bold
-              text-destructive-foreground
-              shadow-lg
-              shadow-destructive/20
-              sm:px-4
-              sm:py-2
-              sm:text-sm
-            "
-          >
-            <EditableField
-              id={id}
-              field="discountPercentage"
-              value={String(discountPercentage ?? 0)}
-              type={type}
-            >
-              {discountPercentage ?? 0}%
-            </EditableField>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }

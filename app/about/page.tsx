@@ -1,34 +1,9 @@
-import { MessageCircle, Send, Phone } from "lucide-react";
+"use client";
+
 import Image from "next/image";
+import { Send, Phone } from "lucide-react";
 
 export default function AboutPage() {
-  const trustItems = [
-    {
-      title: "تجربه در برگزاری تور",
-      desc: "برنامه‌ریزی و اجرای تورها با تمرکز بر تجربه‌ای راحت، منظم و خاطره‌انگیز برای مسافران.",
-    },
-    {
-      title: "برنامه‌ریزی دقیق سفر",
-      desc: "برنامه سفر، اقامت، حمل‌ونقل و بازدیدها از قبل با دقت برنامه‌ریزی می‌شوند.",
-    },
-    {
-      title: "اقامت و خدمات مناسب",
-      desc: "تلاش می‌کنیم برای هر تور، اقامت و خدماتی متناسب با شرایط و بودجه مسافران فراهم کنیم.",
-    },
-    {
-      title: "پشتیبانی مستقیم",
-      desc: "در طول مراحل رزرو و سفر، برای پاسخگویی به سؤالات و راهنمایی مسافران در کنار شما هستیم.",
-    },
-    {
-      title: "تورهای متنوع",
-      desc: "از سفرهای شهری و طبیعت‌گردی تا تورهای خارجی و سفرهای گروهی، انتخاب‌های متنوعی برای شما داریم.",
-    },
-    {
-      title: "چرا با ما سفر کنم؟",
-      desc: "هدف ما این است که سفر را برای شما ساده‌تر، مطمئن‌تر و لذت‌بخش‌تر کنیم.",
-    },
-  ];
-
   return (
     <div
       dir="rtl"
@@ -39,161 +14,172 @@ export default function AboutPage() {
       ========================================= */}
 
       <h1 className="mb-8 text-center text-3xl font-bold text-primary">
-        درباره ما
+        درباره سفرخوش
       </h1>
 
       {/* =========================================
-          INTRO
+          ABOUT SAFARKHOSH
       ========================================= */}
 
       <div className="mb-12 space-y-5 leading-relaxed text-foreground">
+        <h2 className="text-2xl font-bold text-primary">
+          سفرخوش؛ همراه شما برای یک سفر خاطره‌انگیز
+        </h2>
+
         <p>
-          ما با هدف ایجاد یک تجربه متفاوت و لذت‌بخش برای مسافران،
-          در زمینه طراحی و برگزاری تورهای داخلی و خارجی فعالیت می‌کنیم.
+          سفرخوش با هدف ارائه خدمات حرفه‌ای گردشگری و مسافرتی،
+          همراه شماست تا برنامه‌ریزی و رزرو سفر را ساده‌تر،
+          مطمئن‌تر و لذت‌بخش‌تر تجربه کنید.
         </p>
 
         <p>
-          تلاش ما این است که هر سفر از مرحله انتخاب مقصد و رزرو
-          تا پایان سفر، با برنامه‌ریزی دقیق و پشتیبانی مناسب همراه باشد.
-        </p>
-
-        <p>
-          برای ما فقط مقصد مهم نیست؛ کیفیت مسیر، اقامت، برنامه سفر
-          و آرامش مسافر هم بخش مهمی از یک سفر خوب است.
-        </p>
-
-        <p>
-          اگر درباره تورها، مقصدها، شرایط ثبت‌نام یا برنامه سفر
-          سؤالی دارید، از طریق راه‌های ارتباطی زیر با ما در تماس باشید.
+          ما در سفرخوش تلاش می‌کنیم با ارائه مجموعه‌ای از خدمات
+          گردشگری، متناسب با نیاز و بودجه شما، بهترین گزینه‌ها را
+          در اختیارتان قرار دهیم؛ از انتخاب مقصد و رزرو هتل گرفته
+          تا تهیه بلیط و برنامه‌ریزی تورهای داخلی و خارجی.
         </p>
       </div>
 
       {/* =========================================
-          WHY US
+          WHY SAFARKHOSH
       ========================================= */}
 
-      <div className="mb-12 space-y-10">
+      <div className="mb-12 space-y-8">
         <div>
-          <h2 className="mb-6 text-center text-2xl font-bold text-primary">
-            چرا به ما اعتماد کنم؟
+          <h2 className="mb-5 text-center text-2xl font-bold text-primary">
+            چرا سفرخوش؟
           </h2>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            {trustItems.map((item, i) => (
-              <div
-                key={i}
-                className="
-                  rounded-2xl
-                  border
-                  border-border
-                  bg-card
-                  p-6
-                  text-card-foreground
-                  shadow-sm
-                  transition-all
-                  duration-300
-                  hover:border-primary/40
-                  hover:shadow-md
-                "
-              >
-                <h3 className="mb-3 flex items-center gap-2 font-semibold text-primary">
-                  <span className="text-primary">✓</span>
-                  {item.title}
-                </h3>
+          <p className="text-center leading-8 text-muted-foreground">
+            ما باور داریم یک سفر خوب، از برنامه‌ریزی درست شروع می‌شود.
+            به همین دلیل تلاش می‌کنیم خدماتی با کیفیت، قیمت مناسب
+            و پشتیبانی قابل اعتماد ارائه دهیم تا شما با خیال راحت سفر کنید.
+          </p>
 
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  {item.desc}
-                </p>
-              </div>
-            ))}
-          </div>
+          <p className="mt-5 text-center font-semibold text-primary">
+            سفرخوش، از انتخاب مقصد تا بازگشت به خانه، همراه شماست.
+          </p>
         </div>
 
         {/* =========================================
-            ABOUT US
+            FEATURES
         ========================================= */}
 
-        <div
-          className="
-            rounded-2xl
-            border
-            border-border
-            bg-card
-            p-10
-            text-card-foreground
-            shadow-sm
-          "
-        >
-          <h2 className="mb-6 text-center text-2xl font-bold text-primary">
-            درباره تیم ما
-          </h2>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
 
-          <div className="flex flex-col items-center gap-8 md:flex-row md:items-start">
-            {/* IMAGE */}
+          {/* سفر خوش، خاطره‌ساز */}
 
-            <div
-              className="
-                h-40
-                w-40
-                flex-shrink-0
-                overflow-hidden
-                rounded-2xl
-                border
-                border-border
-                bg-muted
-                md:h-48
-                md:w-48
-              "
-            >
-              <img
-                src="/images/travel-team.jpg"
-                alt="تیم برگزارکننده تور"
-                className="h-full w-full object-cover"
-              />
-            </div>
+          <div
+            className="
+              rounded-2xl
+              border
+              border-border
+              bg-card
+              p-6
+              text-center
+              text-card-foreground
+              shadow-sm
+              transition-all
+              duration-300
+              hover:border-primary/40
+              hover:shadow-md
+            "
+          >
+            <h3 className="mb-3 text-lg font-semibold text-primary">
+              سفر خوش، خاطره‌ساز
+            </h3>
 
-            {/* INFO */}
-
-            <div className="flex-1 leading-relaxed text-foreground">
-              <p className="mb-2 text-xl font-semibold text-primary">
-                تیم گردشگری ما
-              </p>
-
-              <p className="mb-4 text-primary/80">
-                همراه شما برای ساختن یک سفر خاطره‌انگیز
-              </p>
-
-              <p className="text-sm leading-7 text-muted-foreground">
-                ما تلاش می‌کنیم با شناخت بهتر مقصدها و توجه به نیازهای
-                مسافران، تورهایی با برنامه‌ریزی مناسب و خدمات قابل اعتماد
-                ارائه کنیم.
-              </p>
-
-              <div className="mt-6 space-y-2 border-t border-border pt-6 text-sm">
-                <p className="text-foreground">
-                  <span className="font-semibold text-primary">✓</span>{" "}
-                  برنامه‌ریزی دقیق سفر
-                </p>
-
-                <p className="text-foreground">
-                  <span className="font-semibold text-primary">✓</span>{" "}
-                  پشتیبانی قبل و هنگام سفر
-                </p>
-
-                <p className="text-foreground">
-                  <span className="font-semibold text-primary">✓</span>{" "}
-                  توجه به کیفیت و رضایت مسافران
-                </p>
-              </div>
-            </div>
+            <p className="text-sm leading-7 text-muted-foreground">
+              تلاش می‌کنیم هر سفر برای شما به تجربه‌ای شیرین،
+              لذت‌بخش و به‌یادماندنی تبدیل شود.
+            </p>
           </div>
+
+          {/* سفری امن و مطمئن */}
+
+          <div
+            className="
+              rounded-2xl
+              border
+              border-border
+              bg-card
+              p-6
+              text-center
+              text-card-foreground
+              shadow-sm
+              transition-all
+              duration-300
+              hover:border-primary/40
+              hover:shadow-md
+            "
+          >
+            <h3 className="mb-3 text-lg font-semibold text-primary">
+              سفری امن و مطمئن
+            </h3>
+
+            <p className="text-sm leading-7 text-muted-foreground">
+              با خیال راحت و بدون نگرانی، برنامه‌ریزی سفر خود را
+              به ما بسپارید و از مسیر سفر لذت ببرید.
+            </p>
+          </div>
+
+          {/* سفری با کیفیت */}
+
+          <div
+            className="
+              rounded-2xl
+              border
+              border-border
+              bg-card
+              p-6
+              text-center
+              text-card-foreground
+              shadow-sm
+              transition-all
+              duration-300
+              hover:border-primary/40
+              hover:shadow-md
+            "
+          >
+            <h3 className="mb-3 text-lg font-semibold text-primary">
+              سفری با کیفیت
+            </h3>
+
+            <p className="text-sm leading-7 text-muted-foreground">
+              با ارائه خدمات مناسب و باکیفیت تلاش می‌کنیم
+              بهترین تجربه ممکن را برای شما فراهم کنیم.
+            </p>
+          </div>
+
+          {/* سریع و در دسترس */}
+
+          <div
+            className="
+              rounded-2xl
+              border
+              border-border
+              bg-card
+              p-6
+              text-center
+              text-card-foreground
+              shadow-sm
+              transition-all
+              duration-300
+              hover:border-primary/40
+              hover:shadow-md
+            "
+          >
+            <h3 className="mb-3 text-lg font-semibold text-primary">
+              سریع و در دسترس
+            </h3>
+
+            <p className="text-sm leading-7 text-muted-foreground">
+              امکان تهیه بلیط و رزرو تورهای مختلف را در هر زمان
+              برای شما فراهم می‌کنیم.
+            </p>
+          </div>
+
         </div>
-
-        {/* =========================================
-            TRAVEL EXPERIENCE
-        ========================================= */}
-
-      
       </div>
 
       {/* =========================================
@@ -216,50 +202,56 @@ export default function AboutPage() {
         </h2>
 
         <div className="flex flex-col justify-center gap-4 sm:flex-row">
-          {/* TELEGRAM */}
 
-        {/* BALE */}
-
-<a
-  href="https://ble.ir/romdental"
-  target="_blank"
-  rel="noopener noreferrer"
-  aria-label="ارتباط در بله"
-  className="
-    flex
-    items-center
-    justify-center
-    gap-2
-    rounded-xl
-    border
-    border-border
-    bg-secondary
-    px-5
-    py-3
-    font-medium
-    text-secondary-foreground
-    transition
-    hover:bg-accent
-    hover:text-accent-foreground
-  "
->
-  <Image
-    src="/icons/bale.svg"
-    alt="بله"
-    width={20}
-    height={20}
-    className="object-contain"
-  />
-
-  بله
-</a>
-
-          {/* WHATSAPP */}
+          {/* =========================================
+              BALE
+          ========================================= */}
 
           <a
-            href="https://wa.me/79254212300"
+            href="https://ble.ir/nrasteh"
             target="_blank"
             rel="noopener noreferrer"
+            aria-label="ارتباط در بله"
+            className="
+              flex
+              items-center
+              justify-center
+              gap-2
+              rounded-xl
+              border
+              border-border
+              bg-secondary
+              px-5
+              py-3
+              font-medium
+              text-secondary-foreground
+              transition
+              hover:bg-accent
+              hover:text-accent-foreground
+            "
+          >
+            <Image
+              src="/icons/bale.svg"
+              alt="بله"
+              width={20}
+              height={20}
+              className="object-contain"
+            />
+
+            <span>
+              بله
+            </span>
+          </a>
+
+          {/* =========================================
+              WHATSAPP
+          ========================================= */}
+
+          <a
+            href="https://wa.me/989171050134"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="ارتباط در واتساپ"
             className="
               flex
               items-center
@@ -276,13 +268,19 @@ export default function AboutPage() {
             "
           >
             <Send size={20} />
-            واتساپ
+
+            <span>
+              واتساپ
+            </span>
           </a>
 
-          {/* PHONE */}
+          {/* =========================================
+              PHONE
+          ========================================= */}
 
           <a
-            href="tel:+79254212300"
+            href="tel:+989171050134"
+            aria-label="تماس تلفنی"
             className="
               flex
               items-center
@@ -302,10 +300,15 @@ export default function AboutPage() {
             "
           >
             <Phone size={20} />
-            تماس تلفنی
+
+            <span>
+              تماس تلفنی
+            </span>
           </a>
+
         </div>
       </div>
+
     </div>
   );
 }

@@ -151,7 +151,8 @@ export default function ContactPage() {
         {/* بله */}
 
 <a
-  href="https://ble.ir/+989171050134"
+    href="https://ble.ir/nrasteh"
+
   target="_blank"
   rel="noopener noreferrer"
   aria-label="ارتباط در بله"
@@ -190,7 +191,7 @@ export default function ContactPage() {
               {/* تماس */}
 
               <a
-                href="tel:+79254212300"
+                href="tel:+989171050134"
                 className="
                   flex
                   min-h-[52px]

@@ -4,6 +4,23 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
+import {
+  FiChevronDown,
+  FiMap,
+  FiHome,
+  FiFileText,
+  FiInfo,
+  FiPhone,
+  FiMenu,
+  FiX,
+} from "react-icons/fi";
+
+import {
+  MdTrain,
+  MdFlight,
+  MdDirectionsBus,
+} from "react-icons/md";
+
 type Props = {
   children?: React.ReactNode;
 };
@@ -12,22 +29,22 @@ export default function NavbarClient({
   children,
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isTicketsOpen, setIsTicketsOpen] = useState(false);
 
   const menuRef = useRef<HTMLDivElement>(null);
 
   // =========================
-  // CLOSE MENU OUTSIDE CLICK
+  // CLOSE MOBILE MENU
   // =========================
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
         menuRef.current &&
-        !menuRef.current.contains(
-          event.target as Node
-        )
+        !menuRef.current.contains(event.target as Node)
       ) {
         setIsOpen(false);
+        setIsTicketsOpen(false);
       }
     }
 
@@ -47,11 +64,12 @@ export default function NavbarClient({
   }, [isOpen]);
 
   // =========================
-  // CLOSE AFTER LINK CLICK
+  // LINK CLICK
   // =========================
 
   const handleLinkClick = () => {
     setIsOpen(false);
+    setIsTicketsOpen(false);
   };
 
   return (
@@ -87,9 +105,9 @@ export default function NavbarClient({
         >
           <Image
             src="/images/logo.png"
-            width={45}
-            height={45}
-            alt="ROMDENTAL"
+            width={60}
+            height={55}
+            alt="SAFARKHOSH"
           />
 
           <span
@@ -99,7 +117,7 @@ export default function NavbarClient({
               text-primary
             "
           >
-            ROMDENTAL
+            سفر خوش
           </span>
         </Link>
 
@@ -119,20 +137,6 @@ export default function NavbarClient({
           "
         >
           {/* =========================
-              PACKAGE
-          ========================= */}
-
-          <Link
-            href="/products/package"
-            className="
-              transition-colors
-              hover:text-primary
-            "
-          >
-            پکیج‌ها
-          </Link>
-
-          {/* =========================
               TOUR
           ========================= */}
 
@@ -147,32 +151,139 @@ export default function NavbarClient({
           </Link>
 
           {/* =========================
-              TRAIN
+              TICKETS DROPDOWN
           ========================= */}
 
-          <Link
-            href="/products/train"
-            className="
-              transition-colors
-              hover:text-primary
-            "
-          >
-            بلیط قطار
-          </Link>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() =>
+                setIsTicketsOpen((prev) => !prev)
+              }
+              className="
+                flex
+                items-center
+                gap-1.5
+                transition-colors
+                hover:text-primary
+              "
+              aria-expanded={isTicketsOpen}
+            >
+              بلیط‌ها
 
-          {/* =========================
-              FLIGHT
-          ========================= */}
+              <FiChevronDown
+                className={`
+                  h-4
+                  w-4
+                  transition-transform
+                  duration-200
+                  ${
+                    isTicketsOpen
+                      ? "rotate-180"
+                      : ""
+                  }
+                `}
+              />
+            </button>
 
-          <Link
-            href="/products/flight"
-            className="
-              transition-colors
-              hover:text-primary
-            "
-          >
-            بلیط هواپیما
-          </Link>
+            {isTicketsOpen && (
+              <div
+                className="
+                  absolute
+                  right-0
+                  top-full
+                  z-50
+                  mt-3
+                  w-56
+                  overflow-hidden
+                  rounded-xl
+                  border
+                  border-border
+                  bg-background
+                  p-2
+                  shadow-lg
+                "
+              >
+                {/* TRAIN */}
+
+                <Link
+                  href="/products/train"
+                  onClick={() =>
+                    setIsTicketsOpen(false)
+                  }
+                  className="
+                    flex
+                    items-center
+                    gap-3
+                    rounded-lg
+                    px-3
+                    py-3
+                    transition-colors
+                    hover:bg-muted
+                    hover:text-primary
+                  "
+                >
+                  <MdTrain className="h-5 w-5" />
+
+                  <span>
+                    بلیط قطار
+                  </span>
+                </Link>
+
+                {/* FLIGHT */}
+
+                <Link
+                  href="/products/flight"
+                  onClick={() =>
+                    setIsTicketsOpen(false)
+                  }
+                  className="
+                    flex
+                    items-center
+                    gap-3
+                    rounded-lg
+                    px-3
+                    py-3
+                    transition-colors
+                    hover:bg-muted
+                    hover:text-primary
+                  "
+                >
+                  <MdFlight className="h-5 w-5" />
+
+                  <span>
+                    بلیط هواپیما
+                  </span>
+                </Link>
+
+                {/* BUS */}
+
+                <Link
+                  href="/products/bus"
+                  onClick={() =>
+                    setIsTicketsOpen(false)
+                  }
+                  className="
+                    flex
+                    items-center
+                    gap-3
+                    rounded-lg
+                    px-3
+                    py-3
+                    transition-colors
+                    hover:bg-muted
+                    hover:text-primary
+                  "
+                >
+                  <MdDirectionsBus className="h-5 w-5" />
+
+                  <span>
+                    بلیط اتوبوس
+                  </span>
+                </Link>
+              </div>
+            )}
+          </div>
 
           {/* =========================
               ACCOMMODATION
@@ -246,8 +357,6 @@ export default function NavbarClient({
           className="
             rounded-lg
             p-2
-            text-2xl
-            leading-none
             text-foreground
             transition-colors
             hover:bg-muted
@@ -265,13 +374,9 @@ export default function NavbarClient({
           aria-expanded={isOpen}
         >
           {isOpen ? (
-            <span aria-hidden="true">
-              ×
-            </span>
+            <FiX className="h-6 w-6" />
           ) : (
-            <span aria-hidden="true">
-              ☰
-            </span>
+            <FiMenu className="h-6 w-6" />
           )}
         </button>
       </div>
@@ -295,173 +400,311 @@ export default function NavbarClient({
           "
         >
           <div className="space-y-1">
-            {/* HOME */}
+
+            {/* =========================
+                HOME
+            ========================= */}
 
             <Link
               href="/"
               onClick={handleLinkClick}
               className="
-                block
+                flex
+                items-center
+                gap-3
                 rounded-lg
                 px-3
-                py-2.5
+                py-3
                 transition-colors
                 hover:bg-muted
                 hover:text-primary
               "
             >
-              خانه
+              <FiHome className="h-5 w-5" />
+
+              <span>
+                خانه
+              </span>
             </Link>
 
-            {/* PACKAGE */}
-
-            <Link
-              href="/products/package"
-              onClick={handleLinkClick}
-              className="
-                block
-                rounded-lg
-                px-3
-                py-2.5
-                transition-colors
-                hover:bg-muted
-                hover:text-primary
-              "
-            >
-              پکیج‌ها
-            </Link>
-
-            {/* TOUR */}
+            {/* =========================
+                TOUR
+            ========================= */}
 
             <Link
               href="/products/tour"
               onClick={handleLinkClick}
               className="
-                block
+                flex
+                items-center
+                gap-3
                 rounded-lg
                 px-3
-                py-2.5
+                py-3
                 transition-colors
                 hover:bg-muted
                 hover:text-primary
               "
             >
-              تورها
+              <FiMap className="h-5 w-5" />
+
+              <span>
+                تورها
+              </span>
             </Link>
 
-            {/* TRAIN */}
+            {/* =========================
+                MOBILE TICKETS
+            ========================= */}
 
-            <Link
-              href="/products/train"
-              onClick={handleLinkClick}
+            <button
+              type="button"
+              onClick={() =>
+                setIsTicketsOpen(
+                  (prev) => !prev
+                )
+              }
               className="
-                block
+                flex
+                w-full
+                items-center
+                justify-between
                 rounded-lg
                 px-3
-                py-2.5
+                py-3
+                text-right
                 transition-colors
                 hover:bg-muted
                 hover:text-primary
               "
+              aria-expanded={isTicketsOpen}
             >
-              بلیط قطار
-            </Link>
+              <span className="flex items-center gap-3">
+                <FiFileText className="h-5 w-5" />
 
-            {/* FLIGHT */}
+                <span>
+                  بلیط‌ها
+                </span>
+              </span>
 
-            <Link
-              href="/products/flight"
-              onClick={handleLinkClick}
-              className="
-                block
-                rounded-lg
-                px-3
-                py-2.5
-                transition-colors
-                hover:bg-muted
-                hover:text-primary
-              "
-            >
-              بلیط هواپیما
-            </Link>
+              <FiChevronDown
+                className={`
+                  h-5
+                  w-5
+                  transition-transform
+                  duration-200
+                  ${
+                    isTicketsOpen
+                      ? "rotate-180"
+                      : ""
+                  }
+                `}
+              />
+            </button>
 
-            {/* ACCOMMODATION */}
+            {/* =========================
+                TICKETS SUB MENU
+            ========================= */}
+
+            {isTicketsOpen && (
+              <div
+                className="
+                  mr-4
+                  border-r
+                  border-border
+                  pr-3
+                "
+              >
+                {/* TRAIN */}
+
+                <Link
+                  href="/products/train"
+                  onClick={handleLinkClick}
+                  className="
+                    flex
+                    items-center
+                    gap-3
+                    rounded-lg
+                    px-3
+                    py-3
+                    text-sm
+                    transition-colors
+                    hover:bg-muted
+                    hover:text-primary
+                  "
+                >
+                 <MdTrain className="h-5 w-5" />
+
+                  <span>
+                    بلیط قطار
+                  </span>
+                </Link>
+
+                {/* FLIGHT */}
+
+                <Link
+                  href="/products/flight"
+                  onClick={handleLinkClick}
+                  className="
+                    flex
+                    items-center
+                    gap-3
+                    rounded-lg
+                    px-3
+                    py-3
+                    text-sm
+                    transition-colors
+                    hover:bg-muted
+                    hover:text-primary
+                  "
+                >
+                 <MdFlight className="h-5 w-5" />
+
+                  <span>
+                    بلیط هواپیما
+                  </span>
+                </Link>
+
+                {/* BUS */}
+
+                <Link
+                  href="/products/bus"
+                  onClick={handleLinkClick}
+                  className="
+                    flex
+                    items-center
+                    gap-3
+                    rounded-lg
+                    px-3
+                    py-3
+                    text-sm
+                    transition-colors
+                    hover:bg-muted
+                    hover:text-primary
+                  "
+                >
+                  <MdDirectionsBus className="h-5 w-5" />
+
+                  <span>
+                    بلیط اتوبوس
+                  </span>
+                </Link>
+              </div>
+            )}
+
+            {/* =========================
+                ACCOMMODATION
+            ========================= */}
 
             <Link
               href="/products/accommodation"
               onClick={handleLinkClick}
               className="
-                block
+                flex
+                items-center
+                gap-3
                 rounded-lg
                 px-3
-                py-2.5
+                py-3
                 transition-colors
                 hover:bg-muted
                 hover:text-primary
               "
             >
-              اقامتگاه‌ها
+              <FiHome className="h-5 w-5" />
+
+              <span>
+                اقامتگاه‌ها
+              </span>
             </Link>
 
-            {/* VISA */}
+            {/* =========================
+                VISA
+            ========================= */}
 
             <Link
               href="/products/visa"
               onClick={handleLinkClick}
               className="
-                block
+                flex
+                items-center
+                gap-3
                 rounded-lg
                 px-3
-                py-2.5
+                py-3
                 transition-colors
                 hover:bg-muted
                 hover:text-primary
               "
             >
-              ویزای توریستی
+              <FiFileText className="h-5 w-5" />
+
+              <span>
+                ویزای توریستی
+              </span>
             </Link>
 
-            {/* DIVIDER */}
+            {/* =========================
+                DIVIDER
+            ========================= */}
 
             <div className="my-3 h-px bg-border" />
 
-            {/* ABOUT */}
+            {/* =========================
+                ABOUT
+            ========================= */}
 
             <Link
               href="/about"
               onClick={handleLinkClick}
               className="
-                block
+                flex
+                items-center
+                gap-3
                 rounded-lg
                 px-3
-                py-2.5
+                py-3
                 transition-colors
                 hover:bg-muted
                 hover:text-primary
               "
             >
-              درباره ما
+              <FiInfo className="h-5 w-5" />
+
+              <span>
+                درباره ما
+              </span>
             </Link>
 
-            {/* CONTACT */}
+            {/* =========================
+                CONTACT
+            ========================= */}
 
             <Link
               href="/contact"
               onClick={handleLinkClick}
               className="
-                block
+                flex
+                items-center
+                gap-3
                 rounded-lg
                 px-3
-                py-2.5
+                py-3
                 transition-colors
                 hover:bg-muted
                 hover:text-primary
               "
             >
-              تماس با ما
+              <FiPhone className="h-5 w-5" />
+
+              <span>
+                تماس با ما
+              </span>
             </Link>
 
-            {/* ADMIN */}
+            {/* =========================
+                ADMIN
+            ========================= */}
 
             {children}
           </div>

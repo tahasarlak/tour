@@ -11,8 +11,8 @@ async function main() {
   // ADMIN
   // ======================================================
 
-  const adminEmail = "admin@romdental.com";
-  const adminPassword = "Admin123456!";
+const adminEmail = "admin@safarkhosh.com";
+const adminPassword = "Admin123456!";
 
   const hashedPassword = await bcrypt.hash(
     adminPassword,
@@ -38,7 +38,235 @@ async function main() {
   console.log(`   Email: ${admin.email}`);
   console.log(`   Password: ${adminPassword}`);
   console.log("");
+// ======================================================
+// BUS TICKETS
+// ======================================================
 
+const buses = [
+  {
+    slug: "moscow-kazan-bus",
+
+    name: "بلیط اتوبوس مسکو به کازان",
+
+    price: "5500",
+    currency: "تومان",
+
+    discountedPrice: "4900",
+    discountPercentage: 11,
+
+    shortDescription:
+      "سفر راحت با اتوبوس از مسکو به کازان با امکانات مناسب.",
+
+    description:
+      "بلیط اتوبوس مسکو به کازان با صندلی راحت، تهویه مطبوع و امکانات مناسب برای سفر بین‌شهری.",
+
+    image:
+      "/images/buses/moscow-kazan.jpg",
+
+    thumbImage:
+      "/images/buses/moscow-kazan-thumb.jpg",
+
+    origin: "مسکو",
+
+    destination: "کازان",
+
+    originCity: "مسکو",
+
+    destinationCity: "کازان",
+
+    originTerminal:
+      "Moscow Central Bus Station",
+
+    destinationTerminal:
+      "Kazan Bus Station",
+
+    originCode: "MOW",
+
+    destinationCode: "KZN",
+
+    busCompany: "Ecolines",
+
+    busName: "Ecolines Comfort",
+
+    busNumber: "EC-204",
+
+    busType: "اتوبوس VIP",
+
+    departureDate: new Date(
+      "2026-12-15T08:00:00"
+    ),
+
+    arrivalDate: new Date(
+      "2026-12-15T19:30:00"
+    ),
+
+    departureTime: "08:00",
+
+    arrivalTime: "19:30",
+
+    duration: "11 ساعت و 30 دقیقه",
+
+    seatType: "صندلی VIP",
+
+    capacity: 45,
+
+    remainingCapacity: 18,
+
+    baggage: "تا 20 کیلوگرم",
+
+    refundPolicy:
+      "استرداد طبق قوانین شرکت اتوبوسرانی",
+
+    cancellationPolicy:
+      "لغو تا 24 ساعت قبل از حرکت با کسر جریمه",
+
+    facilities: [
+      "Wi-Fi",
+      "پریز برق",
+      "تهویه مطبوع",
+      "صندلی قابل تنظیم",
+      "سرویس بهداشتی",
+    ],
+
+    requirements: [
+      "پاسپورت معتبر",
+      "حضور حداقل 30 دقیقه قبل از حرکت",
+    ],
+
+    gallery: [
+      "/images/buses/moscow-kazan-1.jpg",
+      "/images/buses/moscow-kazan-2.jpg",
+    ],
+
+    isSpecial: true,
+
+    isPublished: true,
+  },
+
+  {
+    slug: "moscow-saint-petersburg-bus",
+
+    name: "بلیط اتوبوس مسکو به سن‌پترزبورگ",
+
+    price: "4800",
+
+    currency: "تومان",
+
+    discountedPrice: "4200",
+
+    discountPercentage: 13,
+
+    shortDescription:
+      "بلیط اتوبوس مسکو به سن‌پترزبورگ با سفر شبانه و صندلی راحت.",
+
+    description:
+      "سفر اقتصادی و راحت با اتوبوس از مسکو به سن‌پترزبورگ با امکانات مناسب.",
+
+    image:
+      "/images/buses/moscow-spb.jpg",
+
+    thumbImage:
+      "/images/buses/moscow-spb-thumb.jpg",
+
+    origin: "مسکو",
+
+    destination: "سن‌پترزبورگ",
+
+    originCity: "مسکو",
+
+    destinationCity: "سن‌پترزبورگ",
+
+    originTerminal:
+      "Moscow Central Bus Station",
+
+    destinationTerminal:
+      "Saint Petersburg Bus Station",
+
+    originCode: "MOW",
+
+    destinationCode: "LED",
+
+    busCompany: "Lux Express",
+
+    busName: "Lux Express",
+
+    busNumber: "LE-105",
+
+    busType: "اتوبوس VIP",
+
+    departureDate: new Date(
+      "2026-11-20T22:00:00"
+    ),
+
+    arrivalDate: new Date(
+      "2026-11-21T07:30:00"
+    ),
+
+    departureTime: "22:00",
+
+    arrivalTime: "07:30",
+
+    duration: "9 ساعت و 30 دقیقه",
+
+    seatType: "صندلی راحت",
+
+    capacity: 50,
+
+    remainingCapacity: 23,
+
+    baggage: "تا 20 کیلوگرم",
+
+    refundPolicy:
+      "طبق قوانین شرکت اتوبوسرانی",
+
+    cancellationPolicy:
+      "لغو با کسر جریمه",
+
+    facilities: [
+      "Wi-Fi",
+      "پریز برق",
+      "تهویه مطبوع",
+      "صندلی قابل تنظیم",
+    ],
+
+    requirements: [
+      "پاسپورت معتبر",
+      "حضور حداقل 30 دقیقه قبل از حرکت",
+    ],
+
+    gallery: [
+      "/images/buses/moscow-spb-1.jpg",
+      "/images/buses/moscow-spb-2.jpg",
+    ],
+
+    isSpecial: false,
+
+    isPublished: true,
+  },
+];
+
+// ======================================================
+// CREATE / UPDATE BUS TICKETS
+// ======================================================
+
+for (const bus of buses) {
+  const result =
+    await prisma.busTicket.upsert({
+      where: {
+        slug: bus.slug,
+      },
+
+      update: bus,
+
+      create: bus,
+    });
+
+  console.log(
+    `🚌 Bus: ${result.name}`
+  );
+}
+
+console.log("");
   // ======================================================
   // TOURS
   // ======================================================
@@ -50,7 +278,7 @@ async function main() {
       name: "تور زمستانی مسکو",
 
       price: "45000",
-      currency: "₽",
+      currency: "تومان",
 
       discountedPrice: "39000",
       discountPercentage: 13,
@@ -176,7 +404,7 @@ async function main() {
       name: "تور فرهنگی سن‌پترزبورگ",
 
       price: "52000",
-      currency: "₽",
+      currency: "تومان",
 
       discountedPrice: "47000",
       discountPercentage: 10,
@@ -308,7 +536,7 @@ async function main() {
       name: "تور تابستانی سوچی",
 
       price: "38000",
-      currency: "₽",
+      currency: "تومان",
 
       discountedPrice: "34000",
       discountPercentage: 11,
@@ -459,7 +687,7 @@ async function main() {
       name: "بلیط قطار مسکو به سن‌پترزبورگ",
 
       price: "8500",
-      currency: "₽",
+      currency: "تومان",
 
       discountedPrice: "7500",
       discountPercentage: 12,
@@ -549,7 +777,7 @@ async function main() {
       name: "بلیط قطار مسکو به کازان",
 
       price: "6200",
-      currency: "₽",
+      currency: "تومان",
 
       discountedPrice: "5600",
       discountPercentage: 10,
@@ -666,7 +894,7 @@ async function main() {
       name: "پرواز مسکو به استانبول",
 
       price: "28500",
-      currency: "₽",
+      currency: "تومان",
 
       discountedPrice: "24900",
       discountPercentage: 13,
@@ -760,7 +988,7 @@ async function main() {
       name: "پرواز مسکو به دبی",
 
       price: "33000",
-      currency: "₽",
+      currency: "تومان",
 
       discountedPrice: "29900",
       discountPercentage: 9,
@@ -882,7 +1110,7 @@ async function main() {
       name: "هتل مرکزی مسکو",
 
       price: "12000",
-      currency: "₽",
+      currency: "تومان",
 
       discountedPrice: "9900",
       discountPercentage: 18,
@@ -972,7 +1200,7 @@ async function main() {
       name: "هتل سن‌پترزبورگ سنتر",
 
       price: "9500",
-      currency: "₽",
+      currency: "تومان",
 
       discountedPrice: "8200",
       discountPercentage: 14,
@@ -1087,7 +1315,7 @@ async function main() {
       name: "ویزای توریستی روسیه",
 
       price: "18000",
-      currency: "₽",
+      currency: "تومان",
 
       discountedPrice: "15500",
       discountPercentage: 14,
@@ -1188,7 +1416,7 @@ async function main() {
       name: "خدمات ویزای توریستی ترکیه",
 
       price: "12500",
-      currency: "₽",
+      currency: "تومان",
 
       discountedPrice: "11000",
       discountPercentage: 12,
@@ -1325,18 +1553,21 @@ async function main() {
   console.log("📊 Seed summary:");
   console.log("   👤 Admin: 1");
   console.log(`   🧳 Tours: ${tours.length}`);
-  console.log(
-    `   🚆 Train tickets: ${trainTickets.length}`
-  );
-  console.log(
-    `   ✈️ Flight tickets: ${flightTickets.length}`
-  );
-  console.log(
-    `   🏨 Accommodations: ${accommodations.length}`
-  );
-  console.log(
-    `   🛂 Tourist visas: ${touristVisas.length}`
-  );
+console.log(
+  `   🚆 Train tickets: ${trainTickets.length}`
+);
+
+console.log(
+  `   ✈️ Flight tickets: ${flightTickets.length}`
+);
+
+console.log(
+  `   🚌 Bus tickets: ${buses.length}`
+);
+
+console.log(
+  `   🏨 Accommodations: ${accommodations.length}`
+);
 
   console.log("");
 

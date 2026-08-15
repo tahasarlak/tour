@@ -7,7 +7,8 @@ import Button from "../ui/Button";
 export default function BaleButton() {
   return (
     <a
-      href="https://ble.ir/romdental"
+       href="https://ble.ir/nrasteh"
+
       target="_blank"
       rel="noopener noreferrer"
       aria-label="پیام در بله"

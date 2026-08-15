@@ -5,24 +5,50 @@ import DeleteButton from "@/components/Button/DeleteButton";
 import PublishButton from "@/components/admin/PublishButton";
 import SpecialButton from "@/components/admin/SpecialButton";
 
-type ProductType = string;
+// =========================================================
+// PRODUCT TYPE
+// =========================================================
+
+type ProductType =
+  | "tour"
+  | "train"
+  | "flight"
+  | "bus"
+  | "accommodation"
+  | "visa"
+  | string;
+
+// =========================================================
+// PRODUCT
+// =========================================================
 
 type Product = {
   id: number;
+
   slug: string;
+
   name: string;
+
   shortDescription?: string | null;
+
   image: string | null;
 
   price: string | number;
+
   currency?: string | null;
 
   discountPercentage?: number | null;
+
   discountedPrice?: string | number | null;
 
   isPublished: boolean;
+
   isSpecial: boolean;
 };
+
+// =========================================================
+// PROPS
+// =========================================================
 
 type Props = {
   product: Product;
@@ -41,6 +67,10 @@ type Props = {
 
   href?: string;
 };
+
+// =========================================================
+// COMPONENT
+// =========================================================
 
 export default function ProductCard({
   product,
@@ -66,9 +96,9 @@ export default function ProductCard({
     isSpecial,
   } = product;
 
-  // =========================
+  // =======================================================
   // PRICE
-  // =========================
+  // =======================================================
 
   const originalPrice =
     `${price} ${currency || ""}`.trim();
@@ -78,9 +108,9 @@ export default function ProductCard({
       currency || ""
     }`.trim();
 
-  // =========================
+  // =======================================================
   // DISCOUNT
-  // =========================
+  // =======================================================
 
   const hasDiscount =
     Number(discountPercentage) > 0;
@@ -89,12 +119,36 @@ export default function ProductCard({
     ? `${discountPercentage}% تخفیف`
     : "";
 
-  // =========================
+  // =======================================================
+  // DEFAULT BUTTON TEXT
+  // =======================================================
+
+  const defaultButtonText =
+    type === "tour"
+      ? "مشاهده تور"
+      : type === "train"
+      ? "مشاهده بلیط قطار"
+      : type === "flight"
+      ? "مشاهده بلیط هواپیما"
+      : type === "bus"
+      ? "مشاهده بلیط اتوبوس"
+      : type === "accommodation"
+      ? "مشاهده اقامتگاه"
+      : type === "visa"
+      ? "مشاهده ویزا"
+      : "مشاهده جزئیات";
+
+  // =======================================================
   // LINK
-  // =========================
+  // =======================================================
 
   const href =
-    customHref || `/products/${type}/${slug}`;
+    customHref ||
+    `/products/${type}/${slug}`;
+
+  // =======================================================
+  // RENDER
+  // =======================================================
 
   return (
     <div
@@ -119,7 +173,9 @@ export default function ProductCard({
         ${className}
       `}
     >
-      {/* ================= IMAGE ================= */}
+      {/* ===================================================
+          IMAGE
+      =================================================== */}
 
       <div className="relative w-full overflow-hidden bg-background">
         {image ? (
@@ -182,33 +238,9 @@ export default function ProductCard({
         )}
       </div>
 
-      {/* ================= DISCOUNT ================= */}
-
-      {showDiscount && hasDiscount && (
-        <div
-          className="
-            absolute
-            right-3
-            top-3
-            z-10
-            rounded-full
-            border
-            border-primary/30
-            bg-primary
-            px-3
-            py-1
-            text-xs
-            font-bold
-            text-primary-foreground
-            shadow-lg
-            shadow-primary/20
-          "
-        >
-          {discountText}
-        </div>
-      )}
-
-      {/* ================= ADMIN ACTIONS ================= */}
+      {/* ===================================================
+          ADMIN ACTIONS
+      =================================================== */}
 
       {showAdminActions && (
         <div
@@ -241,10 +273,15 @@ export default function ProductCard({
         </div>
       )}
 
-      {/* ================= CONTENT ================= */}
+      {/* ===================================================
+          CONTENT
+      =================================================== */}
 
       <div className="flex flex-1 flex-col p-3 sm:p-4 md:p-6">
-        {/* NAME */}
+
+        {/* =================================================
+            NAME
+        ================================================= */}
 
         <div className="mb-2 flex h-[56px] items-start">
           <h3
@@ -261,7 +298,9 @@ export default function ProductCard({
           </h3>
         </div>
 
-        {/* DESCRIPTION */}
+        {/* =================================================
+            DESCRIPTION
+        ================================================= */}
 
         <div className="mb-1 flex h-[48px] items-start">
           {showDescription && shortDescription ? (
@@ -278,41 +317,34 @@ export default function ProductCard({
           ) : null}
         </div>
 
-        {/* PRICE */}
+        {/* =================================================
+            PRICE
+        ================================================= */}
 
         <div className="mb-6 h-[58px]">
-          {/* Original */}
 
-          <div className="flex h-[28px] items-center">
-            {hasDiscount ? (
-              <p
-                className="
-                  text-sm
-                  text-muted-foreground
-                  line-through
-                "
-              >
-                {originalPrice}
-              </p>
-            ) : null}
-          </div>
-
-          {/* Final */}
+          {/* Final Price */}
 
           <div className="flex h-[34px] items-center">
             <p
               className="
-                text-2xl
+                text-lg
                 font-bold
                 text-primary
               "
             >
-              {finalPrice}
+              شروع قیمت از{" "}
+              <span className="text-2xl">
+                {finalPrice}
+              </span>
             </p>
           </div>
+
         </div>
 
-        {/* BUTTON */}
+        {/* =================================================
+            BUTTON
+        ================================================= */}
 
         <div className="mt-auto">
           <Link
@@ -335,7 +367,7 @@ export default function ProductCard({
               hover:text-primary-foreground
             "
           >
-            {buttonText || "مشاهده جزئیات"}
+            {buttonText || defaultButtonText}
           </Link>
         </div>
       </div>

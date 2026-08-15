@@ -8,99 +8,59 @@ datasource db {
 }
 
 // ======================================================
-// ENUMS
-// ======================================================
-
-enum ProductType {
-  TOUR
-  TRAIN
-  FLIGHT
-  ACCOMMODATION
-  VISA
-}
-
-enum BookingStatus {
-  PENDING
-  CONFIRMED
-  CANCELLED
-  COMPLETED
-  REJECTED
-}
-
-enum PaymentStatus {
-  UNPAID
-  PENDING
-  PAID
-  FAILED
-  REFUNDED
-}
-
-enum BookingType {
-  TOUR
-  TRAIN
-  FLIGHT
-  ACCOMMODATION
-  VISA
-}
-
-// ======================================================
 // TOUR
 // ======================================================
 
 model Tour {
-  id                 Int       @id @default(autoincrement())
-  slug               String    @unique
+  id   Int    @id @default(autoincrement())
+  slug String @unique
+  name String
 
-  name               String
+  price              Decimal  @db.Decimal(12, 2)
+  currency           String   @default("تومان")
+  discountedPrice    Decimal? @db.Decimal(12, 2)
+  discountPercentage Int      @default(0)
 
-  price              Decimal   @db.Decimal(12, 2)
-  currency           String    @default("₽")
+  shortDescription String?
+  description      String?
 
-  discountedPrice    Decimal?  @db.Decimal(12, 2)
-  discountPercentage Int       @default(0)
+  image      String?
+  thumbImage String?
 
-  shortDescription   String?
-  description        String?
+  destination String
+  country     String?
+  city        String?
 
-  image              String?
-  thumbImage         String?
+  duration String?
 
-  destination        String
-  country            String?
-  city               String?
+  departureDate DateTime?
+  returnDate    DateTime?
 
-  duration           String?
+  capacity          Int?
+  remainingCapacity Int?
 
-  departureDate      DateTime?
-  returnDate         DateTime?
+  accommodation  String?
+  transportation String?
+  meals          String?
+  guide          String?
+  meetingPoint   String?
+  mapUrl         String?
 
-  capacity           Int?
-  remainingCapacity  Int?
+  highlights   String[] @default([])
+  included     String[] @default([])
+  excluded     String[] @default([])
+  requirements String[] @default([])
 
-  accommodation      String?
-  transportation     String?
-  meals              String?
-  guide              String?
+  itinerary Json     @default("[]")
+  gallery   String[] @default([])
 
-  meetingPoint       String?
-  mapUrl             String?
+  isSpecial   Boolean @default(false)
+  isPublished Boolean @default(false)
 
-  highlights         String[]  @default([])
-  included           String[]  @default([])
-  excluded           String[]  @default([])
-  requirements       String[]  @default([])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  itinerary          Json      @default("[]")
-
-  gallery            String[]  @default([])
-
-  isSpecial          Boolean   @default(false)
-  isPublished        Boolean   @default(false)
-
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-
-  bookings           Booking[]
+  bookings Booking[]
 
   @@index([isPublished])
   @@index([destination])
@@ -115,87 +75,68 @@ model Tour {
 // ======================================================
 
 model TrainTicket {
-  id                 Int       @id @default(autoincrement())
-  slug               String    @unique
+  id   Int    @id @default(autoincrement())
+  slug String @unique
+  name String
 
-  name               String
+  price              Decimal  @db.Decimal(12, 2)
+  currency           String   @default("تومان")
+  discountedPrice    Decimal? @db.Decimal(12, 2)
+  discountPercentage Int      @default(0)
 
-  price              Decimal   @db.Decimal(12, 2)
-  currency           String    @default("₽")
+  shortDescription String?
+  description      String?
 
-  discountedPrice    Decimal?  @db.Decimal(12, 2)
-  discountPercentage Int       @default(0)
+  image      String?
+  thumbImage String?
+  gallery    String[] @default([])
 
-  shortDescription   String?
-  description        String?
+  origin      String
+  destination String
 
-  image              String?
-  thumbImage         String?
-  gallery            String[]  @default([])
-
-  // ------------------------------
-  // ROUTE
-  // ------------------------------
-
-  origin             String
-  destination        String
-
-  originCity         String?
-  destinationCity    String?
+  originCity      String?
+  destinationCity String?
 
   originStation      String?
   destinationStation String?
 
-  originCode         String?
-  destinationCode    String?
+  originCode      String?
+  destinationCode String?
 
-  // ------------------------------
-  // TRAIN
-  // ------------------------------
+  trainCompany String?
+  trainName    String?
+  trainNumber  String?
+  trainType    String?
 
-  trainCompany       String?
-  trainName          String?
-  trainNumber        String?
+  departureDate DateTime
+  arrivalDate   DateTime?
 
-  trainType          String?
+  departureTime String?
+  arrivalTime   String?
 
-  // ------------------------------
-  // SCHEDULE
-  // ------------------------------
+  duration String?
 
-  departureDate      DateTime
-  arrivalDate        DateTime?
+  carriageType String?
+  seatType     String?
 
-  departureTime      String?
-  arrivalTime        String?
+  capacity          Int?
+  remainingCapacity Int?
 
-  duration           String?
-
-  // ------------------------------
-  // TICKET
-  // ------------------------------
-
-  carriageType       String?
-  seatType           String?
-
-  capacity           Int?
-  remainingCapacity  Int?
-
-  baggage            String?
+  baggage String?
 
   refundPolicy       String?
   cancellationPolicy String?
 
-  facilities         String[]  @default([])
-  requirements       String[]  @default([])
+  facilities   String[] @default([])
+  requirements String[] @default([])
 
-  isSpecial          Boolean   @default(false)
-  isPublished        Boolean   @default(false)
+  isSpecial   Boolean @default(false)
+  isPublished Boolean @default(false)
 
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  bookings           Booking[]
+  bookings Booking[]
 
   @@index([isPublished])
   @@index([origin])
@@ -210,94 +151,71 @@ model TrainTicket {
 // ======================================================
 
 model FlightTicket {
-  id                 Int       @id @default(autoincrement())
-  slug               String    @unique
+  id   Int    @id @default(autoincrement())
+  slug String @unique
+  name String
 
-  name               String
+  price              Decimal  @db.Decimal(12, 2)
+  currency           String   @default("تومان")
+  discountedPrice    Decimal? @db.Decimal(12, 2)
+  discountPercentage Int      @default(0)
 
-  price              Decimal   @db.Decimal(12, 2)
-  currency           String    @default("₽")
+  shortDescription String?
+  description      String?
 
-  discountedPrice    Decimal?  @db.Decimal(12, 2)
-  discountPercentage Int       @default(0)
+  image      String?
+  thumbImage String?
+  gallery    String[] @default([])
 
-  shortDescription   String?
-  description        String?
+  origin      String
+  destination String
 
-  image              String?
-  thumbImage         String?
-  gallery            String[]  @default([])
-
-  // ------------------------------
-  // ROUTE
-  // ------------------------------
-
-  origin             String
-  destination        String
-
-  originCity         String?
-  destinationCity    String?
+  originCity      String?
+  destinationCity String?
 
   originAirport      String?
   destinationAirport String?
 
-  originAirportCode  String?
+  originAirportCode      String?
   destinationAirportCode String?
 
-  // ------------------------------
-  // AIRLINE
-  // ------------------------------
+  airline      String?
+  airlineCode  String?
+  flightNumber String?
 
-  airline            String?
-  airlineCode        String?
+  departureDate DateTime
+  arrivalDate   DateTime?
 
-  flightNumber       String?
+  departureTime String?
+  arrivalTime   String?
 
-  // ------------------------------
-  // SCHEDULE
-  // ------------------------------
+  duration String?
 
-  departureDate      DateTime
-  arrivalDate        DateTime?
+  cabinClass String?
 
-  departureTime      String?
-  arrivalTime        String?
+  baggage     String?
+  handBaggage String?
 
-  duration           String?
+  stops Int @default(0)
 
-  // ------------------------------
-  // FLIGHT DETAILS
-  // ------------------------------
-
-  cabinClass         String?
-
-  baggage            String?
-  handBaggage        String?
-
-  stops              Int       @default(0)
-
-  refundable         Boolean   @default(false)
+  refundable Boolean @default(false)
 
   refundPolicy       String?
   cancellationPolicy String?
 
-  facilities         String[]  @default([])
-  requirements       String[]  @default([])
+  facilities   String[] @default([])
+  requirements String[] @default([])
 
-  // ------------------------------
-  // STATUS
-  // ------------------------------
+  capacity          Int?
+  remainingCapacity Int?
 
-  capacity           Int?
-  remainingCapacity  Int?
+  isSpecial   Boolean @default(false)
+  isPublished Boolean @default(false)
 
-  isSpecial          Boolean   @default(false)
-  isPublished        Boolean   @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-
-  bookings           Booking[]
+  bookings Booking[]
 
   @@index([isPublished])
   @@index([origin])
@@ -308,97 +226,141 @@ model FlightTicket {
 }
 
 // ======================================================
+// BUS TICKET
+// ======================================================
+
+model BusTicket {
+  id   Int    @id @default(autoincrement())
+  slug String @unique
+  name String
+
+  price              Decimal  @db.Decimal(12, 2)
+  currency           String   @default("تومان")
+  discountedPrice    Decimal? @db.Decimal(12, 2)
+  discountPercentage Int      @default(0)
+
+  shortDescription String?
+  description      String?
+
+  image      String?
+  thumbImage String?
+  gallery    String[] @default([])
+
+  origin      String
+  destination String
+
+  originCity      String?
+  destinationCity String?
+
+  originTerminal      String?
+  destinationTerminal String?
+
+  originCode      String?
+  destinationCode String?
+
+  busCompany String?
+  busName    String?
+  busNumber  String?
+  busType    String?
+
+  departureDate DateTime
+  arrivalDate   DateTime?
+
+  departureTime String?
+  arrivalTime   String?
+
+  duration String?
+
+  seatType  String?
+  seatClass String?
+
+  capacity          Int?
+  remainingCapacity Int?
+
+  baggage String?
+
+  refundPolicy       String?
+  cancellationPolicy String?
+
+  facilities   String[] @default([])
+  requirements String[] @default([])
+
+  isSpecial   Boolean @default(false)
+  isPublished Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookings Booking[]
+
+  @@index([isPublished])
+  @@index([origin])
+  @@index([destination])
+  @@index([departureDate])
+  @@index([busCompany])
+  @@map("bus_tickets")
+}
+
+// ======================================================
 // ACCOMMODATION
 // ======================================================
 
 model Accommodation {
-  id                 Int       @id @default(autoincrement())
-  slug               String    @unique
+  id   Int    @id @default(autoincrement())
+  slug String @unique
+  name String
 
-  name               String
+  price              Decimal  @db.Decimal(12, 2)
+  currency           String   @default("تومان")
+  discountedPrice    Decimal? @db.Decimal(12, 2)
+  discountPercentage Int      @default(0)
 
-  price              Decimal   @db.Decimal(12, 2)
-  currency           String    @default("₽")
+  shortDescription String?
+  description      String?
 
-  discountedPrice    Decimal?  @db.Decimal(12, 2)
-  discountPercentage Int       @default(0)
+  country String?
+  city    String
+  address String?
 
-  shortDescription   String?
-  description        String?
+  latitude  Float?
+  longitude Float?
+  mapUrl    String?
 
-  // ------------------------------
-  // LOCATION
-  // ------------------------------
+  image      String?
+  thumbImage String?
+  gallery    String[] @default([])
 
-  country            String?
-  city               String
-  address            String?
+  accommodationType String?
+  starRating        Int?
 
-  latitude           Float?
-  longitude          Float?
+  roomType String?
 
-  mapUrl             String?
+  capacity          Int?
+  remainingCapacity Int?
+  rooms             Int?
 
-  // ------------------------------
-  // IMAGES
-  // ------------------------------
+  checkInTime  String?
+  checkOutTime String?
 
-  image              String?
-  thumbImage         String?
-  gallery            String[]  @default([])
+  minimumNights Int?
 
-  // ------------------------------
-  // ACCOMMODATION
-  // ------------------------------
+  mealPlan String?
 
-  accommodationType  String?
-  starRating         Int?
-
-  roomType           String?
-
-  capacity           Int?
-  remainingCapacity  Int?
-
-  rooms              Int?
-
-  // ------------------------------
-  // STAY
-  // ------------------------------
-
-  checkInTime        String?
-  checkOutTime       String?
-
-  minimumNights      Int?
-
-  // ------------------------------
-  // MEALS
-  // ------------------------------
-
-  mealPlan           String?
-
-  // ------------------------------
-  // FACILITIES
-  // ------------------------------
-
-  amenities          String[]  @default([])
-  services           String[]  @default([])
-
-  // ------------------------------
-  // POLICIES
-  // ------------------------------
+  amenities String[] @default([])
+  services  String[] @default([])
 
   cancellationPolicy String?
   houseRules         String?
 
-  requirements       String[]  @default([])
+  requirements String[] @default([])
 
-  isSpecial          Boolean   @default(false)
-  isPublished        Boolean   @default(false)
+  isSpecial   Boolean @default(false)
+  isPublished Boolean @default(false)
 
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  bookings           Booking[]
+  bookings Booking[]
 
   @@index([isPublished])
   @@index([country])
@@ -412,92 +374,58 @@ model Accommodation {
 // ======================================================
 
 model TouristVisa {
-  id                 Int       @id @default(autoincrement())
-  slug               String    @unique
+  id   Int    @id @default(autoincrement())
+  slug String @unique
+  name String
 
-  name               String
+  price              Decimal  @db.Decimal(12, 2)
+  currency           String   @default("تومان")
+  discountedPrice    Decimal? @db.Decimal(12, 2)
+  discountPercentage Int      @default(0)
 
-  price              Decimal   @db.Decimal(12, 2)
-  currency           String    @default("₽")
+  shortDescription String?
+  description      String?
 
-  discountedPrice    Decimal?  @db.Decimal(12, 2)
-  discountPercentage Int       @default(0)
+  image      String?
+  thumbImage String?
+  gallery    String[] @default([])
 
-  shortDescription   String?
-  description        String?
+  country     String
+  countryCode String?
 
-  image              String?
-  thumbImage         String?
-  gallery            String[]  @default([])
+  destination String?
 
-  // ------------------------------
-  // VISA DESTINATION
-  // ------------------------------
+  visaType  String?
+  entryType String?
 
-  country            String
-  countryCode        String?
+  validityPeriod String?
+  stayDuration   String?
 
-  destination        String?
+  processingTime String?
 
-  // ------------------------------
-  // VISA TYPE
-  // ------------------------------
-
-  visaType           String?
-  entryType          String?
-
-  validityPeriod     String?
-  stayDuration       String?
-
-  // ------------------------------
-  // PROCESSING
-  // ------------------------------
-
-  processingTime     String?
-
-  urgentProcessing   Boolean   @default(false)
+  urgentProcessing     Boolean @default(false)
   urgentProcessingTime String?
 
-  // ------------------------------
-  // REQUIREMENTS
-  // ------------------------------
-
-  requirements       String[]  @default([])
-
-  requiredDocuments  String[]  @default([])
-
+  requirements        String[] @default([])
+  requiredDocuments   String[] @default([])
   additionalDocuments String[] @default([])
 
-  // ------------------------------
-  // SERVICES
-  // ------------------------------
+  included String[] @default([])
+  excluded String[] @default([])
 
-  included            String[] @default([])
-  excluded            String[] @default([])
-
-  interviewRequired   Boolean  @default(false)
-
-  biometricsRequired  Boolean  @default(false)
-
-  // ------------------------------
-  // POLICIES
-  // ------------------------------
+  interviewRequired  Boolean @default(false)
+  biometricsRequired Boolean @default(false)
 
   cancellationPolicy String?
-
   notes              String?
 
-  // ------------------------------
-  // STATUS
-  // ------------------------------
+  isSpecial   Boolean @default(false)
+  isPublished Boolean @default(false)
 
-  isSpecial          Boolean   @default(false)
-  isPublished        Boolean   @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-
-  bookings           Booking[]
+  bookings Booking[]
 
   @@index([isPublished])
   @@index([country])
@@ -510,98 +438,79 @@ model TouristVisa {
 // ======================================================
 
 model Booking {
-  id                 Int           @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  bookingNumber      String        @unique
+  bookingNumber String @unique
 
-  type               BookingType
+  type BookingType
 
-  status             BookingStatus @default(PENDING)
+  status        BookingStatus @default(PENDING)
+  paymentStatus PaymentStatus @default(UNPAID)
 
-  paymentStatus      PaymentStatus @default(UNPAID)
+  firstName String
+  lastName  String
 
-  // ------------------------------
-  // CUSTOMER
-  // ------------------------------
+  phone String
+  email String?
 
-  firstName          String
-  lastName           String
+  nationality String?
 
-  phone              String
-  email              String?
+  passportNumber String?
+  passportExpiry DateTime?
 
-  nationality        String?
+  adults   Int @default(1)
+  children Int @default(0)
+  infants  Int @default(0)
 
-  passportNumber     String?
-  passportExpiry     DateTime?
+  quantity Int @default(1)
 
-  // ------------------------------
-  // PASSENGERS / GUESTS
-  // ------------------------------
+  unitPrice  Decimal @db.Decimal(12, 2)
+  totalPrice Decimal @db.Decimal(12, 2)
 
-  adults             Int           @default(1)
-  children           Int           @default(0)
-  infants            Int           @default(0)
+  currency String @default("تومان")
 
-  // ------------------------------
-  // PRICE
-  // ------------------------------
+  // ====================================================
+  // PRODUCT IDS
+  // ====================================================
 
-  quantity           Int           @default(1)
+  tourId          Int?
+  trainTicketId   Int?
+  flightTicketId  Int?
+  busTicketId     Int?
+  accommodationId Int?
+  touristVisaId   Int?
 
-  unitPrice          Decimal       @db.Decimal(12, 2)
+  // ====================================================
+  // NOTES / PAYMENT
+  // ====================================================
 
-  totalPrice         Decimal       @db.Decimal(12, 2)
+  customerNote String?
+  adminNote    String?
 
-  currency           String        @default("₽")
+  passengerData Json?
 
-  // ------------------------------
-  // PRODUCT RELATIONS
-  // ------------------------------
+  paymentId        String?
+  paymentReference String?
+  paidAt           DateTime?
 
-  tourId             Int?
-  tour               Tour?         @relation(fields: [tourId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  trainTicketId      Int?
-  trainTicket        TrainTicket?  @relation(fields: [trainTicketId], references: [id], onDelete: SetNull)
+  // ====================================================
+  // RELATIONS
+  // ====================================================
 
-  flightTicketId     Int?
-  flightTicket       FlightTicket? @relation(fields: [flightTicketId], references: [id], onDelete: SetNull)
+  tour Tour? @relation(fields: [tourId], references: [id])
 
-  accommodationId   Int?
-  accommodation      Accommodation? @relation(fields: [accommodationId], references: [id], onDelete: SetNull)
+  trainTicket TrainTicket? @relation(fields: [trainTicketId], references: [id])
 
-  touristVisaId      Int?
-  touristVisa        TouristVisa?  @relation(fields: [touristVisaId], references: [id], onDelete: SetNull)
+  flightTicket FlightTicket? @relation(fields: [flightTicketId], references: [id])
 
-  // ------------------------------
-  // EXTRA INFORMATION
-  // ------------------------------
+  busTicket BusTicket? @relation(fields: [busTicketId], references: [id])
 
-  customerNote       String?
+  accommodation Accommodation? @relation(fields: [accommodationId], references: [id])
 
-  adminNote          String?
-
-  // اطلاعات مسافر/مهمان
-  passengerData      Json?
-
-  // ------------------------------
-  // PAYMENT
-  // ------------------------------
-
-  paymentId          String?
-
-  paymentReference   String?
-
-  paidAt             DateTime?
-
-  // ------------------------------
-  // DATES
-  // ------------------------------
-
-  createdAt          DateTime       @default(now())
-
-  updatedAt          DateTime       @updatedAt
+  touristVisa TouristVisa? @relation(fields: [touristVisaId], references: [id])
 
   @@index([type])
   @@index([status])
@@ -609,7 +518,7 @@ model Booking {
   @@index([phone])
   @@index([email])
   @@index([createdAt])
-
+  @@index([busTicketId])
   @@map("bookings")
 }
 
@@ -618,11 +527,62 @@ model Booking {
 // ======================================================
 
 model Admin {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  password String
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("admins")
+}
+
+// ======================================================
+// PRODUCT TYPE
+// ======================================================
+
+enum ProductType {
+  TOUR
+  TRAIN
+  FLIGHT
+  BUS
+  ACCOMMODATION
+  VISA
+}
+
+// ======================================================
+// BOOKING STATUS
+// ======================================================
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  REJECTED
+}
+
+// ======================================================
+// PAYMENT STATUS
+// ======================================================
+
+enum PaymentStatus {
+  UNPAID
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+// ======================================================
+// BOOKING TYPE
+// ======================================================
+
+enum BookingType {
+  TOUR
+  TRAIN
+  FLIGHT
+  BUS
+  ACCOMMODATION
+  VISA
 }

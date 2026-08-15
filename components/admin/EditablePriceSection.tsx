@@ -20,15 +20,12 @@ export default function EditablePriceSection({
   currency,
   type = "product",
 }: Props) {
-  const [isAdmin, setIsAdmin] =
-    useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const checkAdmin = async () => {
       try {
-        const res = await fetch(
-          "/api/auth/check"
-        );
+        const res = await fetch("/api/auth/check");
 
         if (!res.ok) {
           setIsAdmin(false);
@@ -37,9 +34,7 @@ export default function EditablePriceSection({
 
         const data = await res.json();
 
-        setIsAdmin(
-          data.isAdmin === true
-        );
+        setIsAdmin(data.isAdmin === true);
       } catch {
         setIsAdmin(false);
       }
@@ -48,20 +43,28 @@ export default function EditablePriceSection({
     checkAdmin();
   }, []);
 
+  // =========================
+  // FINAL PRICE
+  // =========================
+
   const hasDiscount =
     discountedPrice !== null &&
-    discountedPrice !== undefined &&
     discountPercentage !== null &&
-    discountPercentage > 0 &&
+    Number(discountPercentage) > 0 &&
     discountedPrice < price;
 
-  const showDiscountedPrice =
-    isAdmin || hasDiscount;
+  const finalPrice = hasDiscount
+    ? discountedPrice
+    : price;
+
+  // =========================
+  // FORMAT
+  // =========================
 
   const formatPrice = (value: number) => {
-    return new Intl.NumberFormat(
-      "fa-IR"
-    ).format(Math.round(value));
+    return new Intl.NumberFormat("fa-IR").format(
+      Math.round(value)
+    );
   };
 
   return (
@@ -104,99 +107,58 @@ export default function EditablePriceSection({
 
       {/* PRICE */}
 
-      <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
-        {/* ORIGINAL */}
+   <div className="flex items-baseline gap-3">
+  <span
+    className="
+      whitespace-nowrap
+      text-base
+      font-bold
+      text-muted-foreground
+      sm:text-lg
+    "
+  >
+    شروع قیمت از
+  </span>
+
 
         <EditableField
           id={id}
-          field="price"
-          value={String(price)}
+          field={hasDiscount ? "discountedPrice" : "price"}
+          value={String(finalPrice)}
           type={type}
           variant="value"
         >
           <div className="flex items-baseline gap-2">
             <span
-              className={`
-                font-bold
+              className="
+                text-2xl
+                font-black
                 leading-none
-                ${
-                  hasDiscount
-                    ? "text-lg text-muted-foreground line-through sm:text-xl"
-                    : "text-2xl text-primary sm:text-3xl"
-                }
-              `}
+                text-primary
+                sm:text-3xl
+              "
             >
-              {formatPrice(price)}
+              {formatPrice(finalPrice)}
             </span>
 
             {currency && (
               <span
-                className={`
+                className="
                   text-xs
+                  text-muted-foreground
                   sm:text-sm
-                  ${
-                    hasDiscount
-                      ? "text-muted-foreground line-through"
-                      : "text-muted-foreground"
-                  }
-                `}
+                "
               >
                 {currency}
               </span>
             )}
           </div>
         </EditableField>
-
-        {/* DISCOUNTED */}
-
-        {showDiscountedPrice && (
-          <EditableField
-            id={id}
-            field="discountedPrice"
-            value={
-              discountedPrice !== null
-                ? String(discountedPrice)
-                : ""
-            }
-            type={type}
-            variant="value"
-          >
-            <div className="flex items-baseline gap-2">
-              <span
-                className="
-                  text-2xl
-                  font-black
-                  leading-none
-                  text-primary
-                  sm:text-3xl
-                "
-              >
-                {discountedPrice !== null
-                  ? formatPrice(
-                      discountedPrice
-                    )
-                  : "—"}
-              </span>
-
-              {currency && (
-                <span
-                  className="
-                    text-xs
-                    text-muted-foreground
-                    sm:text-sm
-                  "
-                >
-                  {currency}
-                </span>
-              )}
-            </div>
-          </EditableField>
-        )}
       </div>
 
       {/* ADMIN HINT */}
 
-      {isAdmin && !hasDiscount && (
+      {isAdmin && (
         <p
           className="
             mt-3
@@ -205,9 +167,7 @@ export default function EditablePriceSection({
             text-muted-foreground
           "
         >
-          برای افزودن تخفیف، قیمت
-          تخفیف‌خورده و درصد تخفیف را
-          ویرایش کنید.
+          برای تغییر قیمت، روی قیمت کلیک کنید.
         </p>
       )}
     </section>

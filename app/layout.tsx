@@ -20,15 +20,15 @@ const Inter = InterFont({
 
 export const metadata: Metadata = {
   title: {
-    default: "ROMDENTAL | تورهای دندانپزشکی",
-    template: "%s | ROMDENTAL",
+    default: "سفر خوش | آغاز یک سفر به‌یادماندنی",
+    template: "%s | سفر خوش",
   },
 
   description:
-    "مشاهده و ثبت‌نام تورهای تخصصی دندانپزشکی ROMDENTAL",
+    "سفر خوش؛ همراه شما برای کشف مقصدهای جذاب، تورهای ویژه و تجربه سفرهایی متفاوت و به‌یادماندنی.",
 
   icons: {
-    icon: "/images/cossher-ahmad.jpg",
+    icon: "/images/logo.png",
   },
 
   robots: {
