@@ -199,7 +199,7 @@ export default function Footer() {
     "
   >
     <Image
-      src="/icons/bale.svg"
+      src="/icons/logo82.png"
       alt="بله"
       width={22}
       height={22}
@@ -322,23 +322,7 @@ export default function Footer() {
             />
           </div>
 
-          {/* Location */}
-
-          <div
-            className="
-              flex
-              items-center
-              gap-2
-              text-xs
-              text-muted-foreground
-            "
-          >
-            <MapPin className="h-3.5 w-3.5" />
-
-            <span>
-              همراه شما در مسیر یک سفر به‌یادماندنی
-            </span>
-          </div>
+       
 
           {/* Copyright */}
 

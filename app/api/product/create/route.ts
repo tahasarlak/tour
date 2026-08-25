@@ -21,7 +21,7 @@ function createSlug(text: string): string {
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
 
-  return slug || `tour-${Date.now()}`;
+  return slug || `bus-${Date.now()}`;
 }
 
 // =========================================================
@@ -31,18 +31,19 @@ function createSlug(text: string): string {
 async function getUniqueSlug(
   baseSlug: string
 ): Promise<string> {
-  let slug = baseSlug || `tour-${Date.now()}`;
+  let slug = baseSlug || `bus-${Date.now()}`;
   let counter = 1;
 
   while (true) {
-    const existing = await prisma.tour.findUnique({
-      where: {
-        slug,
-      },
-      select: {
-        id: true,
-      },
-    });
+    const existing =
+      await prisma.busTicket.findUnique({
+        where: {
+          slug,
+        },
+        select: {
+          id: true,
+        },
+      });
 
     if (!existing) {
       return slug;
@@ -57,26 +58,35 @@ async function getUniqueSlug(
 // ARRAY
 // =========================================================
 
-function parseArray(value: unknown): string[] {
+function parseArray(
+  value: unknown
+): string[] {
   if (Array.isArray(value)) {
     return value
-      .map((item) => String(item).trim())
+      .map((item) =>
+        String(item).trim()
+      )
       .filter(Boolean);
   }
 
   if (typeof value === "string") {
     try {
-      const parsed = JSON.parse(value);
+      const parsed =
+        JSON.parse(value);
 
       if (Array.isArray(parsed)) {
         return parsed
-          .map((item) => String(item).trim())
+          .map((item) =>
+            String(item).trim()
+          )
           .filter(Boolean);
       }
     } catch {
       return value
         .split("\n")
-        .map((item) => item.trim())
+        .map((item) =>
+          item.trim()
+        )
         .filter(Boolean);
     }
   }
@@ -88,14 +98,17 @@ function parseArray(value: unknown): string[] {
 // BOOLEAN
 // =========================================================
 
-function parseBoolean(value: unknown): boolean {
+function parseBoolean(
+  value: unknown
+): boolean {
   if (typeof value === "boolean") {
     return value;
   }
 
   if (typeof value === "string") {
     return (
-      value.toLowerCase() === "true" ||
+      value.toLowerCase() ===
+        "true" ||
       value === "1"
     );
   }
@@ -114,9 +127,15 @@ function parseDate(
     return null;
   }
 
-  const date = new Date(String(value));
+  const date = new Date(
+    String(value)
+  );
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
     return null;
   }
 
@@ -148,49 +167,26 @@ function parseInteger(
 }
 
 // =========================================================
-// JSON
-// =========================================================
-
-function parseJson(
-  value: unknown,
-  fallback: unknown
-): unknown {
-  if (
-    value === undefined ||
-    value === null ||
-    value === ""
-  ) {
-    return fallback;
-  }
-
-  if (typeof value !== "string") {
-    return value;
-  }
-
-  try {
-    return JSON.parse(value);
-  } catch {
-    return fallback;
-  }
-}
-
-// =========================================================
 // POST
 // =========================================================
 
-export async function POST(req: Request) {
+export async function POST(
+  req: Request
+) {
   try {
     // =====================================================
     // ADMIN AUTH
     // =====================================================
 
-    const session = await getAdminSession();
+    const session =
+      await getAdminSession();
 
     if (!session) {
       return NextResponse.json(
         {
           success: false,
-          error: "دسترسی غیرمجاز.",
+          error:
+            "دسترسی غیرمجاز.",
         },
         {
           status: 401,
@@ -205,20 +201,24 @@ export async function POST(req: Request) {
     let body: Body = {};
 
     const contentType =
-      req.headers.get("content-type") || "";
+      req.headers.get(
+        "content-type"
+      ) || "";
 
     if (
       contentType.includes(
         "application/json"
       )
     ) {
-      const text = await req.text();
+      const text =
+        await req.text();
 
       if (!text.trim()) {
         return NextResponse.json(
           {
             success: false,
-            error: "اطلاعاتی ارسال نشده است.",
+            error:
+              "اطلاعاتی ارسال نشده است.",
           },
           {
             status: 400,
@@ -227,12 +227,14 @@ export async function POST(req: Request) {
       }
 
       try {
-        body = JSON.parse(text);
+        body =
+          JSON.parse(text);
       } catch {
         return NextResponse.json(
           {
             success: false,
-            error: "JSON نامعتبر است.",
+            error:
+              "JSON نامعتبر است.",
           },
           {
             status: 400,
@@ -244,16 +246,20 @@ export async function POST(req: Request) {
         "multipart/form-data"
       )
     ) {
-      const formData = await req.formData();
+      const formData =
+        await req.formData();
 
-      formData.forEach((value, key) => {
-        body[key] = value;
-      });
+      formData.forEach(
+        (value, key) => {
+          body[key] = value;
+        }
+      );
     } else {
       return NextResponse.json(
         {
           success: false,
-          error: "نوع درخواست نامعتبر است.",
+          error:
+            "نوع درخواست نامعتبر است.",
         },
         {
           status: 400,
@@ -273,7 +279,29 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: "نام تور الزامی است.",
+          error:
+            "نام بلیت اتوبوس الزامی است.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    // =====================================================
+    // ORIGIN
+    // =====================================================
+
+    const origin = String(
+      body.origin || ""
+    ).trim();
+
+    if (!origin) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "مبدا الزامی است.",
         },
         {
           status: 400,
@@ -285,15 +313,17 @@ export async function POST(req: Request) {
     // DESTINATION
     // =====================================================
 
-    const destination = String(
-      body.destination || ""
-    ).trim();
+    const destination =
+      String(
+        body.destination || ""
+      ).trim();
 
     if (!destination) {
       return NextResponse.json(
         {
           success: false,
-          error: "مقصد تور الزامی است.",
+          error:
+            "مقصد الزامی است.",
         },
         {
           status: 400,
@@ -313,7 +343,29 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: "قیمت تور الزامی است.",
+          error:
+            "قیمت بلیت الزامی است.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    const numericPrice =
+      Number(price);
+
+    if (
+      !Number.isFinite(
+        numericPrice
+      ) ||
+      numericPrice < 0
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "قیمت نامعتبر است.",
         },
         {
           status: 400,
@@ -326,33 +378,46 @@ export async function POST(req: Request) {
     // =====================================================
 
     const currency =
-      body.currency !== undefined &&
-      String(body.currency).trim()
-        ? String(body.currency).trim()
-        : "₽";
+      body.currency !==
+        undefined &&
+      String(
+        body.currency
+      ).trim()
+        ? String(
+            body.currency
+          ).trim()
+        : "تومان";
 
     // =====================================================
     // SLUG
     // =====================================================
 
-    const requestedSlug = String(
-      body.slug || ""
-    ).trim();
+    const requestedSlug =
+      String(
+        body.slug || ""
+      ).trim();
 
-    const baseSlug = requestedSlug
-      ? createSlug(requestedSlug)
-      : createSlug(name);
+    const baseSlug =
+      requestedSlug
+        ? createSlug(
+            requestedSlug
+          )
+        : createSlug(name);
 
     const slug =
-      await getUniqueSlug(baseSlug);
+      await getUniqueSlug(
+        baseSlug
+      );
 
     // =====================================================
     // DISCOUNT
     // =====================================================
 
-    let discountPercentage = Number(
-      body.discountPercentage || 0
-    );
+    let discountPercentage =
+      Number(
+        body.discountPercentage ||
+          0
+      );
 
     if (
       !Number.isFinite(
@@ -362,15 +427,16 @@ export async function POST(req: Request) {
       discountPercentage = 0;
     }
 
-    discountPercentage = Math.max(
-      0,
-      Math.min(
-        100,
-        Math.round(
-          discountPercentage
+    discountPercentage =
+      Math.max(
+        0,
+        Math.min(
+          100,
+          Math.round(
+            discountPercentage
+          )
         )
-      )
-    );
+      );
 
     // =====================================================
     // DISCOUNTED PRICE
@@ -380,28 +446,34 @@ export async function POST(req: Request) {
       | string
       | null = null;
 
-    const discountedInput = String(
-      body.discountedPrice || ""
-    ).trim();
-
-    const numericPrice = Number(price);
+    const discountedInput =
+      String(
+        body.discountedPrice ||
+          ""
+      ).trim();
 
     if (discountedInput) {
       const numericDiscounted =
-        Number(discountedInput);
+        Number(
+          discountedInput
+        );
 
       if (
         Number.isFinite(
           numericDiscounted
         ) &&
         numericDiscounted >= 0 &&
-        numericDiscounted < numericPrice
+        numericDiscounted <
+          numericPrice
       ) {
         discountedPrice =
-          String(numericDiscounted);
+          String(
+            numericDiscounted
+          );
 
         if (
-          discountPercentage === 0 &&
+          discountPercentage ===
+            0 &&
           numericPrice > 0
         ) {
           discountPercentage =
@@ -410,7 +482,8 @@ export async function POST(req: Request) {
                 (numericPrice -
                   numericDiscounted) /
                 numericPrice
-              ) * 100
+              ) *
+                100
             );
         }
       }
@@ -421,14 +494,15 @@ export async function POST(req: Request) {
       !discountedPrice &&
       numericPrice > 0
     ) {
-      discountedPrice = String(
-        Math.round(
-          numericPrice -
-            (numericPrice *
-              discountPercentage) /
-              100
-        )
-      );
+      discountedPrice =
+        String(
+          Math.round(
+            numericPrice -
+              (numericPrice *
+                discountPercentage) /
+                100
+          )
+        );
     }
 
     // =====================================================
@@ -439,22 +513,26 @@ export async function POST(req: Request) {
       | string
       | null = null;
 
-    const image = body.image;
+    const image =
+      body.image;
 
     if (
       image instanceof File &&
       image.size > 0
     ) {
-      const blob = await put(
-        `tours/${image.name}`,
-        image,
-        {
-          access: "public",
-          addRandomSuffix: true,
-        }
-      );
+      const blob =
+        await put(
+          `bus-tickets/${image.name}`,
+          image,
+          {
+            access: "public",
+            addRandomSuffix:
+              true,
+          }
+        );
 
-      imageUrl = blob.url;
+      imageUrl =
+        blob.url;
     }
 
     // =====================================================
@@ -472,20 +550,23 @@ export async function POST(req: Request) {
       thumbImage instanceof File &&
       thumbImage.size > 0
     ) {
-      const blob = await put(
-        `tours/thumbs/${thumbImage.name}`,
-        thumbImage,
-        {
-          access: "public",
-          addRandomSuffix: true,
-        }
-      );
+      const blob =
+        await put(
+          `bus-tickets/thumbs/${thumbImage.name}`,
+          thumbImage,
+          {
+            access: "public",
+            addRandomSuffix:
+              true,
+          }
+        );
 
-      thumbImageUrl = blob.url;
+      thumbImageUrl =
+        blob.url;
     }
 
     // =====================================================
-    // DATES
+    // DEPARTURE DATE
     // =====================================================
 
     const departureDate =
@@ -493,9 +574,26 @@ export async function POST(req: Request) {
         body.departureDate
       );
 
-    const returnDate =
+    if (!departureDate) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "تاریخ حرکت الزامی و نامعتبر است.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    // =====================================================
+    // ARRIVAL DATE
+    // =====================================================
+
+    const arrivalDate =
       parseDate(
-        body.returnDate
+        body.arrivalDate
       );
 
     // =====================================================
@@ -503,7 +601,9 @@ export async function POST(req: Request) {
     // =====================================================
 
     const capacity =
-      parseInteger(body.capacity);
+      parseInteger(
+        body.capacity
+      );
 
     const remainingCapacity =
       body.remainingCapacity !==
@@ -514,136 +614,236 @@ export async function POST(req: Request) {
         : capacity;
 
     // =====================================================
-    // TOUR
+    // BUS TICKET
     // =====================================================
 
-    const tour =
-      await prisma.tour.create({
-        data: {
-          name,
-          slug,
+    const busTicket =
+      await prisma.busTicket.create(
+        {
+          data: {
+            // -------------------------------------------------
+            // BASIC
+            // -------------------------------------------------
 
-          price,
-          currency,
+            name,
+            slug,
 
-          discountedPrice,
-          discountPercentage,
+            price,
+            currency,
 
-          shortDescription:
-            String(
-              body.shortDescription || ""
-            ).trim() || null,
+            discountedPrice,
+            discountPercentage,
 
-          description:
-            String(
-              body.description || ""
-            ).trim() || null,
+            shortDescription:
+              String(
+                body.shortDescription ||
+                  ""
+              ).trim() || null,
 
-          image: imageUrl,
-          thumbImage:
-            thumbImageUrl,
+            description:
+              String(
+                body.description ||
+                  ""
+              ).trim() || null,
 
-          destination,
+            image: imageUrl,
 
-          country:
-            String(
-              body.country || ""
-            ).trim() || null,
+            thumbImage:
+              thumbImageUrl,
 
-          city:
-            String(
-              body.city || ""
-            ).trim() || null,
+            gallery:
+              parseArray(
+                body.gallery
+              ),
 
-          duration:
-            String(
-              body.duration || ""
-            ).trim() || null,
+            // -------------------------------------------------
+            // ROUTE
+            // -------------------------------------------------
 
-          departureDate,
-          returnDate,
+            origin,
 
-          capacity,
-          remainingCapacity,
+            destination,
 
-          accommodation:
-            String(
-              body.accommodation || ""
-            ).trim() || null,
+            originCity:
+              String(
+                body.originCity ||
+                  ""
+              ).trim() || null,
 
-          transportation:
-            String(
-              body.transportation || ""
-            ).trim() || null,
+            destinationCity:
+              String(
+                body.destinationCity ||
+                  ""
+              ).trim() || null,
 
-          meals:
-            String(
-              body.meals || ""
-            ).trim() || null,
+            originTerminal:
+              String(
+                body.originTerminal ||
+                  ""
+              ).trim() || null,
 
-          guide:
-            String(
-              body.guide || ""
-            ).trim() || null,
+            destinationTerminal:
+              String(
+                body.destinationTerminal ||
+                  ""
+              ).trim() || null,
 
-          meetingPoint:
-            String(
-              body.meetingPoint || ""
-            ).trim() || null,
+            originCode:
+              String(
+                body.originCode ||
+                  ""
+              ).trim() || null,
 
-          mapUrl:
-            String(
-              body.mapUrl || ""
-            ).trim() || null,
+            destinationCode:
+              String(
+                body.destinationCode ||
+                  ""
+              ).trim() || null,
 
-          highlights:
-            parseArray(
-              body.highlights
-            ),
+            // -------------------------------------------------
+            // BUS
+            // -------------------------------------------------
 
-          included:
-            parseArray(
-              body.included
-            ),
+            busCompany:
+              String(
+                body.busCompany ||
+                  ""
+              ).trim() || null,
 
-          excluded:
-            parseArray(
-              body.excluded
-            ),
+            busName:
+              String(
+                body.busName ||
+                  ""
+              ).trim() || null,
 
-          requirements:
-            parseArray(
-              body.requirements
-            ),
+            busNumber:
+              String(
+                body.busNumber ||
+                  ""
+              ).trim() || null,
 
-          itinerary:
-            parseJson(
-              body.itinerary,
-              []
-            ) as any,
+            busType:
+              String(
+                body.busType ||
+                  ""
+              ).trim() || null,
 
-          gallery:
-            parseArray(
-              body.gallery
-            ),
+            // -------------------------------------------------
+            // DATE / TIME
+            // -------------------------------------------------
 
-          isSpecial:
-            parseBoolean(
-              body.isSpecial
-            ),
+            departureDate,
 
-          // تور جدید همیشه مخفی
-          isPublished: false,
-        },
-      });
+            arrivalDate,
+
+            departureTime:
+              String(
+                body.departureTime ||
+                  ""
+              ).trim() || null,
+
+            arrivalTime:
+              String(
+                body.arrivalTime ||
+                  ""
+              ).trim() || null,
+
+            duration:
+              String(
+                body.duration ||
+                  ""
+              ).trim() || null,
+
+            // -------------------------------------------------
+            // SEAT
+            // -------------------------------------------------
+
+            seatType:
+              String(
+                body.seatType ||
+                  ""
+              ).trim() || null,
+
+            seatClass:
+              String(
+                body.seatClass ||
+                  ""
+              ).trim() || null,
+
+            // -------------------------------------------------
+            // CAPACITY
+            // -------------------------------------------------
+
+            capacity,
+
+            remainingCapacity,
+
+            // -------------------------------------------------
+            // BAGGAGE
+            // -------------------------------------------------
+
+            baggage:
+              String(
+                body.baggage ||
+                  ""
+              ).trim() || null,
+
+            // -------------------------------------------------
+            // POLICIES
+            // -------------------------------------------------
+
+            refundPolicy:
+              String(
+                body.refundPolicy ||
+                  ""
+              ).trim() || null,
+
+            cancellationPolicy:
+              String(
+                body.cancellationPolicy ||
+                  ""
+              ).trim() || null,
+
+            // -------------------------------------------------
+            // FACILITIES
+            // -------------------------------------------------
+
+            facilities:
+              parseArray(
+                body.facilities
+              ),
+
+            requirements:
+              parseArray(
+                body.requirements
+              ),
+
+            // -------------------------------------------------
+            // STATUS
+            // -------------------------------------------------
+
+            isSpecial:
+              parseBoolean(
+                body.isSpecial
+              ),
+
+            // بلیت جدید همیشه مخفی
+            isPublished: false,
+          },
+        }
+      );
+
+    // =====================================================
+    // RESPONSE
+    // =====================================================
 
     return NextResponse.json(
       {
         success: true,
-        type: "tour",
+        type: "bus",
         message:
-          "تور با موفقیت ساخته شد.",
-        tour,
+          "بلیت اتوبوس با موفقیت ساخته شد.",
+        busTicket,
       },
       {
         status: 201,
@@ -651,12 +851,17 @@ export async function POST(req: Request) {
     );
   } catch (error: any) {
     console.error(
-      "Tour create error:",
+      "Bus ticket create error:",
       error
     );
 
+    // =====================================================
+    // DUPLICATE SLUG
+    // =====================================================
+
     if (
-      error?.code === "P2002"
+      error?.code ===
+      "P2002"
     ) {
       return NextResponse.json(
         {
@@ -670,12 +875,16 @@ export async function POST(req: Request) {
       );
     }
 
+    // =====================================================
+    // GENERAL ERROR
+    // =====================================================
+
     return NextResponse.json(
       {
         success: false,
         error:
           error?.message ||
-          "خطا در ساخت تور.",
+          "خطا در ساخت بلیت اتوبوس.",
       },
       {
         status: 500,

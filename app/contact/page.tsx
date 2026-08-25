@@ -177,7 +177,7 @@ export default function ContactPage() {
   "
 >
   <Image
-    src="/icons/bale.svg"
+    src="/icons/logo82.png"
     alt="بله"
     width={20}
     height={20}

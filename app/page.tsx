@@ -11,24 +11,26 @@ export default async function HomePage() {
   // FEATURED TOURS
   // ==========================================
 
-  const featuredTours = await prisma.tour.findMany({
-    where: {
-      isSpecial: true,
-      isPublished: true,
-    },
+const featuredTours = await prisma.tour.findMany({
+  where: {
+    isPublished: true,
+  },
 
-    orderBy: {
+  orderBy: [
+    {
+      isSpecial: "desc",
+    },
+    {
       createdAt: "desc",
     },
+  ],
 
-    take: 3,
-  });
-
+  take: 3,
+});
   // ==========================================
   // NORMALIZE PRISMA DATA
   // ==========================================
-  // Prisma Decimal را به number تبدیل می‌کنیم
-  // تا کامپوننت‌های UI به Prisma وابسته نباشند.
+
 
   const normalizedFeaturedTours =
     featuredTours.map((tour) => ({
@@ -122,19 +124,7 @@ export default async function HomePage() {
             md:py-32
           "
         >
-          <p
-            className="
-              mb-4
-              text-sm
-              font-semibold
-              uppercase
-              tracking-[3px]
-              text-primary
-            "
-          >
-            سفر • تجربه • کشف
-          </p>
-
+         
           <h1
             className="
               mb-6
@@ -149,7 +139,7 @@ export default async function HomePage() {
             سفرهای فراموش‌نشدنی
 
             <span className="mt-2 block text-primary">
-              با تورهای ویژه ما
+              با سفر خوش
             </span>
           </h1>
 
@@ -164,9 +154,7 @@ export default async function HomePage() {
               md:text-xl
             "
           >
-            مقصدهای جذاب را کشف کنید و با
-            برنامه‌ریزی حرفه‌ای، تجربه‌ای متفاوت
-            از سفر داشته باشید.
+            خدمات انلاین، هرجا در هر لحظه
           </p>
 
           <div

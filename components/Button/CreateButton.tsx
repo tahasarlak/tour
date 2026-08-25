@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Button from "@/components/ui/Button";
-
-type CreateType = string;
+import {
+  type ProductType,
+} from "@/lib/product-types";
 
 type FormState = {
   name: string;
@@ -16,909 +17,338 @@ type FormState = {
   shortDescription: string;
   description: string;
   image: File | null;
+  thumbImage: File | null;
+  origin: string;
+  destination: string;
+  departureDate: string;
+  isSpecial: boolean;
 };
 
 type Props = {
-  type: CreateType;
-
-  /**
-   * متن دکمه ساخت
-   */
+  type: ProductType;
   buttonText?: string;
-
-  /**
-   * عنوان مودال
-   */
   title?: string;
-
-  /**
-   * متن دکمه ایجاد
-   */
   submitText?: string;
-
-  /**
-   * نمایش توضیحات کامل
-   */
   showDescription?: boolean;
-
-  /**
-   * نمایش فیلد قیمت
-   */
   showPrice?: boolean;
-
-  /**
-   * نمایش فیلد تخفیف
-   */
   showDiscount?: boolean;
-
-  /**
-   * نمایش ارز
-   */
   showCurrency?: boolean;
-
-  /**
-   * نمایش آپلود تصویر
-   */
   showImage?: boolean;
-
-  /**
-   * مقدار پیش‌فرض ارز
-   */
   defaultCurrency?: string;
-
-  /**
-   * مسیر API
-   */
   apiUrl?: string;
-
-  /**
-   * مسیر بعد از ایجاد
-   */
   redirectTo?: string;
 };
 
+function createInitialForm(defaultCurrency: string): FormState {
+  return {
+    name: "",
+    price: "",
+    currency: defaultCurrency,
+    discountedPrice: "",
+    discountPercentage: "",
+    shortDescription: "",
+    description: "",
+    image: null,
+    thumbImage: null,
+    origin: "",
+    destination: "",
+    departureDate: "",
+    isSpecial: false,
+  };
+}
+
+function defaultApiForType(type: ProductType): string {
+  switch (type) {
+    case "train": return "/api/train/create";
+    case "flight": return "/api/flight/create";
+    case "bus": return "/api/bus/create";
+    default: return "/api/product/create";
+  }
+}
+
+function typeLabel(type: ProductType): string {
+  switch (type) {
+    case "train": return "بلیت قطار";
+    case "flight": return "بلیت هواپیما";
+    case "bus": return "بلیت اتوبوس";
+    default: return "بلیت";
+  }
+}
+
 export default function CreateButton({
   type,
-
   buttonText = "+ ساخت مورد جدید",
-
-  title = "ساخت مورد جدید",
-
+  title,
   submitText = "ساخت",
-
   showDescription = true,
-
   showPrice = true,
-
   showDiscount = true,
-
   showCurrency = true,
-
   showImage = true,
-
-  defaultCurrency = "₽",
-
-  apiUrl = "/api/product/create",
-
+  defaultCurrency = "تومان",
+  apiUrl,
   redirectTo,
 }: Props) {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const [open, setOpen] =
-    useState(false);
+  const [form, setForm] = useState<FormState>(() => createInitialForm(defaultCurrency));
 
-  const [loading, setLoading] =
-    useState(false);
-
-  // =========================================================
-  // FORM
-  // =========================================================
-
-  const [form, setForm] =
-    useState<FormState>({
-      name: "",
-      price: "",
-      currency: defaultCurrency,
-      discountedPrice: "",
-      discountPercentage: "",
-      shortDescription: "",
-      description: "",
-      image: null,
-    });
-
-  // =========================================================
-  // RESET
-  // =========================================================
+  const resolvedApiUrl = apiUrl || defaultApiForType(type);
+  const resolvedTitle = title || `ساخت ${typeLabel(type)}`;
 
   function resetForm() {
-    setForm({
-      name: "",
-      price: "",
-      currency: defaultCurrency,
-      discountedPrice: "",
-      discountPercentage: "",
-      shortDescription: "",
-      description: "",
-      image: null,
-    });
+    setForm(createInitialForm(defaultCurrency));
+    setErrorMessage("");
   }
-
-  // =========================================================
-  // OPEN
-  // =========================================================
 
   function openModal() {
     resetForm();
     setOpen(true);
   }
 
-  // =========================================================
-  // CLOSE
-  // =========================================================
-
   function closeModal() {
     if (loading) return;
-
     setOpen(false);
+    setErrorMessage("");
   }
 
-  // =========================================================
-  // PRICE
-  // =========================================================
-
-  function handlePriceChange(
-    value: string
-  ) {
-    setForm((prev) => {
-      let discountedPrice =
-        prev.discountedPrice;
-
-      let discountPercentage =
-        prev.discountPercentage;
-
-      const price = Number(value);
-
-      if (
-        discountPercentage &&
-        Number.isFinite(price) &&
-        price > 0
-      ) {
-        const percentage = Number(
-          discountPercentage
-        );
-
-        if (
-          Number.isFinite(percentage)
-        ) {
-          discountedPrice = String(
-            Math.round(
-              price -
-                (price * percentage) /
-                  100
-            )
-          );
-        }
-      }
-
-      return {
-        ...prev,
-        price: value,
-        discountedPrice,
-      };
-    });
+  function update<K extends keyof FormState>(key: K, value: FormState[K]) {
+    setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  // =========================================================
-  // DISCOUNTED PRICE
-  // =========================================================
+  // ====================== قیمت و تخفیف ======================
+  function handlePriceChange(value: string) {
+    update("price", value);
 
-  function handleDiscountedPriceChange(
-    value: string
-  ) {
-    const price = Number(
-      form.price
-    );
+    const price = Number(value);
+    const percentage = Number(form.discountPercentage);
 
+    if (Number.isFinite(price) && price > 0 && Number.isFinite(percentage) && form.discountPercentage !== "") {
+      const discounted = Math.round(price - (price * percentage) / 100);
+      update("discountedPrice", String(discounted));
+    }
+  }
+
+  function handleDiscountedPriceChange(value: string) {
+    const price = Number(form.price);
     if (!value) {
-      setForm((prev) => ({
-        ...prev,
-        discountedPrice: "",
-        discountPercentage: "",
-      }));
-
+      setForm((prev) => ({ ...prev, discountedPrice: "", discountPercentage: "" }));
       return;
     }
-
-    const discounted =
-      Number(value);
-
-    let percentage = "";
-
-    if (
-      Number.isFinite(price) &&
-      price > 0 &&
-      Number.isFinite(discounted)
-    ) {
-      percentage = String(
-        Math.round(
-          ((price - discounted) /
-            price) *
-            100
-        )
-      );
+    const discounted = Number(value);
+    if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(discounted)) {
+      update("discountedPrice", value);
+      return;
     }
-
+    const percentage = Math.round(((price - discounted) / price) * 100);
     setForm((prev) => ({
       ...prev,
       discountedPrice: value,
-      discountPercentage:
-        percentage,
+      discountPercentage: String(Math.max(0, Math.min(100, percentage))),
     }));
   }
 
-  // =========================================================
-  // DISCOUNT PERCENTAGE
-  // =========================================================
-
-  function handleDiscountPercentageChange(
-    value: string
-  ) {
-    const price = Number(
-      form.price
-    );
-
+  function handleDiscountPercentageChange(value: string) {
     if (!value) {
-      setForm((prev) => ({
-        ...prev,
-        discountPercentage: "",
-        discountedPrice: "",
-      }));
-
+      setForm((prev) => ({ ...prev, discountPercentage: "", discountedPrice: "" }));
       return;
     }
+    let percentage = Number(value);
+    if (!Number.isFinite(percentage)) percentage = 0;
+    percentage = Math.max(0, Math.min(100, percentage));
 
-    let percentage =
-      Number(value);
-
-    if (percentage > 100) {
-      percentage = 100;
-    }
-
-    if (percentage < 0) {
-      percentage = 0;
-    }
-
-    const percentageString =
-      String(percentage);
-
-    let discounted = "";
-
-    if (
-      Number.isFinite(price) &&
-      price > 0 &&
-      Number.isFinite(percentage)
-    ) {
-      discounted = String(
-        Math.round(
-          price -
-            (price * percentage) /
-              100
-        )
-      );
-    }
-
+    const price = Number(form.price);
+    const discounted = price > 0 ? Math.round(price - (price * percentage) / 100) : "";
     setForm((prev) => ({
       ...prev,
-      discountPercentage:
-        percentageString,
-      discountedPrice:
-        discounted,
+      discountPercentage: String(percentage),
+      discountedPrice: discounted ? String(discounted) : "",
     }));
   }
 
-  // =========================================================
-  // CREATE
-  // =========================================================
+  // ====================== اعتبارسنجی ======================
+  function validate(): string | null {
+    if (!form.name.trim()) return "لطفاً نام را وارد کنید.";
+    if (showPrice && (!form.price.trim() || !Number.isFinite(Number(form.price)) || Number(form.price) < 0)) {
+      return "لطفاً قیمت معتبر وارد کنید.";
+    }
+    if (!form.origin.trim()) return "مبدا بلیت الزامی است.";
+    if (!form.destination.trim()) return "مقصد بلیت الزامی است.";
+    if (!form.departureDate) return "تاریخ حرکت بلیت الزامی است.";
+    return null;
+  }
 
+  // ====================== ساخت ======================
   async function create() {
     if (loading) return;
+    setErrorMessage("");
 
-    if (!form.name.trim()) {
-      alert("لطفاً نام را وارد کنید.");
+    const validationError = validate();
+    if (validationError) {
+      setErrorMessage(validationError);
       return;
     }
 
     setLoading(true);
 
     try {
-      const formData =
-        new FormData();
+      const formData = new FormData();
+      formData.append("type", type);
+      formData.append("name", form.name.trim());
 
-      // =========================
-      // TYPE
-      // =========================
-
-      formData.append(
-        "type",
-        type
-      );
-
-      // =========================
-      // NAME
-      // =========================
-
-      formData.append(
-        "name",
-        form.name.trim()
-      );
-
-      // =========================
-      // PRICE
-      // =========================
-
-      if (showPrice) {
-        formData.append(
-          "price",
-          String(
-            form.price || "0"
-          )
-        );
-      }
-
-      // =========================
-      // CURRENCY
-      // =========================
-
-      if (showCurrency) {
-        formData.append(
-          "currency",
-          String(
-            form.currency ||
-              defaultCurrency
-          )
-        );
-      }
-
-      // =========================
-      // DISCOUNT
-      // =========================
-
+      if (showPrice) formData.append("price", form.price.trim() || "0");
+      if (showCurrency) formData.append("currency", form.currency.trim() || defaultCurrency);
       if (showDiscount) {
-        formData.append(
-          "discountPercentage",
-          String(
-            form.discountPercentage ||
-              ""
-          )
-        );
+        formData.append("discountPercentage", form.discountPercentage.trim());
+        formData.append("discountedPrice", form.discountedPrice.trim());
+      }
+      formData.append("shortDescription", form.shortDescription.trim());
 
-        formData.append(
-          "discountedPrice",
-          String(
-            form.discountedPrice ||
-              ""
-          )
-        );
+      if (showDescription) formData.append("description", form.description.trim());
+
+      if (showImage && form.image) formData.append("image", form.image);
+      if (showImage && form.thumbImage) formData.append("thumbImage", form.thumbImage);
+
+      // فیلدهای اجباری بلیت‌ها
+      formData.append("origin", form.origin.trim());
+      formData.append("destination", form.destination.trim());
+      formData.append("departureDate", form.departureDate);
+
+      formData.append("isSpecial", form.isSpecial ? "true" : "false");
+
+      const res = await fetch(resolvedApiUrl, { method: "POST", body: formData });
+
+      const contentType = res.headers.get("content-type") || "";
+      const responseText = await res.text();
+      let result: any = null;
+
+      if (contentType.includes("application/json")) {
+        result = responseText ? JSON.parse(responseText) : null;
+      } else {
+        if (!res.ok) throw new Error(responseText?.trim() || `خطای سرور: ${res.status}`);
+        throw new Error("سرور پاسخ JSON برنگرداند.");
       }
 
-      // =========================
-      // SHORT DESCRIPTION
-      // =========================
-
-      formData.append(
-        "shortDescription",
-        String(
-          form.shortDescription ||
-            ""
-        )
-      );
-
-      // =========================
-      // DESCRIPTION
-      // =========================
-
-      if (showDescription) {
-        formData.append(
-          "description",
-          String(
-            form.description ||
-              ""
-          )
-        );
+      if (!res.ok || (result && result.success === false)) {
+        throw new Error(result?.error || result?.message || "ساخت اطلاعات ناموفق بود.");
       }
-
-      // =========================
-      // IMAGE
-      // =========================
-
-      if (
-        showImage &&
-        form.image
-      ) {
-        formData.append(
-          "image",
-          form.image
-        );
-      }
-
-      // =========================
-      // API
-      // =========================
-
-      const res =
-        await fetch(
-          apiUrl,
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
-
-      const result =
-        await res.json();
-
-      if (!res.ok) {
-        throw new Error(
-          result.error ||
-            result.message ||
-            "خطا در ساخت اطلاعات."
-        );
-      }
-
-      // =========================
-      // SUCCESS
-      // =========================
 
       setOpen(false);
-
       resetForm();
-
-      if (redirectTo) {
-        router.push(
-          redirectTo
-        );
-      } else {
-        router.refresh();
-      }
+      if (redirectTo) router.push(redirectTo);
+      else router.refresh();
     } catch (error) {
-      console.error(
-        "CREATE ERROR:",
-        error
-      );
-
-      alert(
-        error instanceof Error
-          ? error.message
-          : "خطا در ساخت اطلاعات."
-      );
+      const message = error instanceof Error ? error.message : "خطا در ساخت اطلاعات.";
+      setErrorMessage(message);
+      alert(message);
     } finally {
       setLoading(false);
     }
   }
 
-  // =========================================================
-  // UI
-  // =========================================================
+  // ====================== کلاس‌های استایل ======================
+  const inputClass = `
+    w-full rounded-2xl border border-slate-700 bg-slate-800 px-5 py-4 text-lg text-white outline-none
+    placeholder:text-slate-500 focus:border-amber-400
+  `;
+  const smallInputClass = `
+    w-full rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3 text-white outline-none
+    placeholder:text-slate-500 focus:border-amber-400
+  `;
+  const textareaClass = `
+    w-full resize-none rounded-2xl border border-slate-700 bg-slate-800 px-5 py-4 text-lg text-white outline-none
+    placeholder:text-slate-500 focus:border-amber-400
+  `;
 
   return (
     <>
-      {/* =====================================================
-          CREATE BUTTON
-      ===================================================== */}
-
-      <Button
-        variant="primary"
-        size="lg"
-        onClick={openModal}
-      >
-        {buttonText}
-      </Button>
-
-      {/* =====================================================
-          MODAL
-      ===================================================== */}
+      <Button variant="primary" size="lg" onClick={openModal}>{buttonText}</Button>
 
       {open && (
-        <div
-          className="
-            fixed
-            inset-0
-            z-50
-            flex
-            items-center
-            justify-center
-            overflow-y-auto
-            bg-black/70
-            p-4
-          "
-        >
-          <div
-            className="
-              my-8
-              w-full
-              max-w-lg
-              rounded-3xl
-              border
-              border-amber-400/30
-              bg-slate-900
-              p-8
-              shadow-2xl
-            "
-          >
-            {/* TITLE */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-4">
+          <div className="my-8 w-full max-w-3xl rounded-3xl border border-amber-400/30 bg-slate-900 p-6 shadow-2xl md:p-8">
+            <h2 className="text-2xl font-bold text-white mb-2">{resolvedTitle}</h2>
+            <p className="text-sm text-slate-400">نوع اطلاعات: {typeLabel(type)}</p>
 
-            <h2
-              className="
-                mb-6
-                text-2xl
-                font-bold
-                text-white
-              "
-            >
-              {title}
-            </h2>
+            {errorMessage && (
+              <div className="mt-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-red-300 text-sm">
+                {errorMessage}
+              </div>
+            )}
 
-            {/* =================================================
-                FORM
-            ================================================= */}
+            <div className="space-y-5 mt-6">
+              {/* بخش پایه */}
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
+                <h3 className="mb-4 font-bold text-amber-400">اطلاعات پایه</h3>
+                <div className="space-y-4">
+                  <input type="text" placeholder="نام *" value={form.name} onChange={(e) => update("name", e.target.value)} className={inputClass} />
 
-            <div className="space-y-4">
+                  {showPrice && (
+                    <input type="number" min="0" placeholder="قیمت اصلی *" value={form.price} onChange={(e) => handlePriceChange(e.target.value)} className={inputClass} />
+                  )}
 
-              {/* NAME */}
+                  {showCurrency && (
+                    <input type="text" placeholder="ارز" value={form.currency} onChange={(e) => update("currency", e.target.value)} className={inputClass} />
+                  )}
 
-              <input
-                type="text"
-                placeholder="نام"
-                value={form.name}
-                onChange={(e) =>
-                  setForm(
-                    (prev) => ({
-                      ...prev,
-                      name: e.target
-                        .value,
-                    })
-                  )
-                }
-                className="
-                  w-full
-                  rounded-2xl
-                  border
-                  border-slate-700
-                  bg-slate-800
-                  px-5
-                  py-4
-                  text-lg
-                  text-white
-                  outline-none
-                  transition
-                  placeholder:text-slate-500
-                  focus:border-amber-400
-                "
-              />
+                  {showDiscount && (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <input type="number" min="0" placeholder="قیمت تخفیفی" value={form.discountedPrice} onChange={(e) => handleDiscountedPriceChange(e.target.value)} className={smallInputClass} />
+                      <input type="number" min="0" max="100" placeholder="درصد تخفیف" value={form.discountPercentage} onChange={(e) => handleDiscountPercentageChange(e.target.value)} className={smallInputClass} />
+                    </div>
+                  )}
 
-              {/* PRICE */}
+                  <textarea placeholder="توضیح کوتاه" value={form.shortDescription} onChange={(e) => update("shortDescription", e.target.value)} rows={3} className={textareaClass} />
 
-              {showPrice && (
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="قیمت اصلی"
-                  value={
-                    form.price
-                  }
-                  onChange={(e) =>
-                    handlePriceChange(
-                      e.target.value
-                    )
-                  }
-                  className="
-                    w-full
-                    rounded-2xl
-                    border
-                    border-slate-700
-                    bg-slate-800
-                    px-5
-                    py-4
-                    text-lg
-                    text-white
-                    outline-none
-                    focus:border-amber-400
-                  "
-                />
-              )}
-
-              {/* CURRENCY */}
-
-              {showCurrency && (
-                <div className="space-y-2">
-                  <input
-                    type="text"
-                    placeholder="ارز"
-                    value={
-                      form.currency
-                    }
-                    onChange={(e) =>
-                      setForm(
-                        (prev) => ({
-                          ...prev,
-                          currency:
-                            e.target
-                              .value,
-                        })
-                      )
-                    }
-                    className="
-                      w-full
-                      rounded-2xl
-                      border
-                      border-slate-700
-                      bg-slate-800
-                      px-5
-                      py-4
-                      text-lg
-                      text-white
-                      outline-none
-                      focus:border-amber-400
-                    "
-                  />
-
-                  {form.currency !==
-                    defaultCurrency && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setForm(
-                          (prev) => ({
-                            ...prev,
-                            currency:
-                              defaultCurrency,
-                          })
-                        )
-                      }
-                      className="
-                        text-sm
-                        text-amber-400
-                        transition
-                        hover:text-amber-300
-                      "
-                    >
-                      پیشنهاد:{" "}
-                      {
-                        defaultCurrency
-                      }
-                    </button>
+                  {showDescription && (
+                    <textarea placeholder="توضیحات کامل" value={form.description} onChange={(e) => update("description", e.target.value)} rows={5} className={textareaClass} />
                   )}
                 </div>
-              )}
+              </div>
 
-              {/* DISCOUNTED PRICE */}
-
-              {showDiscount && (
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="قیمت تخفیفی"
-                  value={
-                    form.discountedPrice
-                  }
-                  onChange={(e) =>
-                    handleDiscountedPriceChange(
-                      e.target.value
-                    )
-                  }
-                  className="
-                    w-full
-                    rounded-2xl
-                    border
-                    border-slate-700
-                    bg-slate-800
-                    px-5
-                    py-4
-                    text-lg
-                    text-white
-                    outline-none
-                    focus:border-amber-400
-                  "
-                />
-              )}
-
-              {/* DISCOUNT PERCENTAGE */}
-
-              {showDiscount && (
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  placeholder="درصد تخفیف"
-                  value={
-                    form.discountPercentage
-                  }
-                  onChange={(e) =>
-                    handleDiscountPercentageChange(
-                      e.target.value
-                    )
-                  }
-                  className="
-                    w-full
-                    rounded-2xl
-                    border
-                    border-slate-700
-                    bg-slate-800
-                    px-5
-                    py-4
-                    text-lg
-                    text-white
-                    outline-none
-                    focus:border-amber-400
-                  "
-                />
-              )}
-
-              {/* SHORT DESCRIPTION */}
-
-              <textarea
-                placeholder="توضیح کوتاه"
-                value={
-                  form.shortDescription
-                }
-                onChange={(e) =>
-                  setForm(
-                    (prev) => ({
-                      ...prev,
-                      shortDescription:
-                        e.target
-                          .value,
-                    })
-                  )
-                }
-                rows={4}
-                className="
-                  w-full
-                  resize-none
-                  rounded-2xl
-                  border
-                  border-slate-700
-                  bg-slate-800
-                  px-5
-                  py-4
-                  text-lg
-                  text-white
-                  outline-none
-                  placeholder:text-slate-500
-                  focus:border-amber-400
-                "
-              />
-
-              {/* DESCRIPTION */}
-
-              {showDescription && (
-                <textarea
-                  placeholder="توضیحات کامل"
-                  value={
-                    form.description
-                  }
-                  onChange={(e) =>
-                    setForm(
-                      (prev) => ({
-                        ...prev,
-                        description:
-                          e.target
-                            .value,
-                      })
-                    )
-                  }
-                  rows={5}
-                  className="
-                    w-full
-                    resize-none
-                    rounded-2xl
-                    border
-                    border-slate-700
-                    bg-slate-800
-                    px-5
-                    py-4
-                    text-lg
-                    text-white
-                    outline-none
-                    placeholder:text-slate-500
-                    focus:border-amber-400
-                  "
-                />
-              )}
-
-              {/* IMAGE */}
-
+              {/* تصاویر */}
               {showImage && (
-                <div className="space-y-2">
-                  <label
-                    className="
-                      block
-                      text-sm
-                      text-slate-400
-                    "
-                  >
-                    تصویر
-                  </label>
-
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file =
-                        e.target
-                          .files?.[0] ||
-                        null;
-
-                      setForm(
-                        (prev) => ({
-                          ...prev,
-                          image:
-                            file,
-                        })
-                      );
-                    }}
-                    className="
-                      block
-                      w-full
-                      text-sm
-                      text-slate-400
-                      file:mr-4
-                      file:rounded-xl
-                      file:border-0
-                      file:bg-amber-500
-                      file:px-5
-                      file:py-3
-                      file:font-bold
-                      file:text-slate-900
-                      hover:file:bg-amber-400
-                    "
-                  />
-
-                  {form.image && (
-                    <p className="text-sm text-slate-500">
-                      {
-                        form.image
-                          .name
-                      }
-                    </p>
-                  )}
+                <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
+                  <h3 className="mb-4 font-bold text-amber-400">تصاویر</h3>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-sm text-slate-400">تصویر اصلی</label>
+                      <input type="file" accept="image/*" onChange={(e) => update("image", e.target.files?.[0] || null)} className="block w-full text-sm text-slate-400 file:mr-4 file:rounded-xl file:border-0 file:bg-amber-500 file:px-5 file:py-3 file:font-bold file:text-slate-900" />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm text-slate-400">تصویر thumbnail</label>
+                      <input type="file" accept="image/*" onChange={(e) => update("thumbImage", e.target.files?.[0] || null)} className="block w-full text-sm text-slate-400 file:mr-4 file:rounded-xl file:border-0 file:bg-amber-500 file:px-5 file:py-3 file:font-bold file:text-slate-900" />
+                    </div>
+                  </div>
                 </div>
               )}
+
+              {/* مسیر و زمان‌بندی (فقط اجباری) */}
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
+                <h3 className="mb-4 font-bold text-amber-400">مسیر و زمان‌بندی</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <input placeholder="مبدا *" value={form.origin} onChange={(e) => update("origin", e.target.value)} className={smallInputClass} />
+                  <input placeholder="مقصد *" value={form.destination} onChange={(e) => update("destination", e.target.value)} className={smallInputClass} />
+                  <input type="datetime-local" placeholder="تاریخ حرکت *" value={form.departureDate} onChange={(e) => update("departureDate", e.target.value)} className={smallInputClass} />
+                </div>
+              </div>
+
+              {/* گزینه محصول ویژه */}
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
+                <h3 className="mb-4 font-bold text-amber-400">تنظیمات</h3>
+                <label className="flex cursor-pointer items-center gap-3 text-slate-300">
+                  <input type="checkbox" checked={form.isSpecial} onChange={(e) => update("isSpecial", e.target.checked)} className="h-5 w-5 accent-amber-500" />
+                  محصول ویژه
+                </label>
+              </div>
             </div>
 
-            {/* =================================================
-                BUTTONS
-            ================================================= */}
-
-            <div
-              className="
-                mt-8
-                flex
-                gap-4
-              "
-            >
-              {/* CREATE */}
-
-              <Button
-                variant="primary"
-                size="lg"
-                loading={loading}
-                onClick={create}
-                className="flex-1"
-              >
-                {submitText}
-              </Button>
-
-              {/* CANCEL */}
-
-              <Button
-                variant="secondary"
-                size="lg"
-                onClick={closeModal}
-                className="flex-1"
-              >
-                لغو
-              </Button>
+            <div className="mt-8 flex gap-4">
+              <Button variant="primary" size="lg" loading={loading} onClick={create} className="flex-1">{submitText}</Button>
+              <Button variant="secondary" size="lg" onClick={closeModal} className="flex-1">لغو</Button>
             </div>
           </div>
         </div>

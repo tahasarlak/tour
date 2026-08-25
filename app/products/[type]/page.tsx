@@ -293,7 +293,7 @@ const descriptions: Record<ProductType, string> = {
 
       slug: product.slug,
 
-      name: product.name,
+      name: product.name ?? "",
 
       shortDescription:
         product.shortDescription,

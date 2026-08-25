@@ -120,7 +120,7 @@ export default function ProductRegistration({
           "
         >
           <Image
-            src="/icons/bale.svg"
+            src="/icons/logo82.png"
             alt="بله"
             width={21}
             height={21}

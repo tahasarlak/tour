@@ -17,7 +17,6 @@ type Product = {
 
   currency: string | null;
 
-  // فقط بعضی محصولات این فیلد را دارند
   duration?: string | null;
 
   shortDescription: string | null;
@@ -34,6 +33,7 @@ type Props = {
     | "tour"
     | "train"
     | "flight"
+    | "bus"
     | "accommodation"
     | "visa"
     | string;
@@ -47,6 +47,7 @@ const typeLabels: Record<string, string> = {
   tour: "تور",
   train: "بلیط قطار",
   flight: "بلیط هواپیما",
+  bus: "بلیط اتوبوس",
   accommodation: "اقامتگاه",
   visa: "ویزای توریستی",
 };
@@ -57,7 +58,8 @@ export default function ProductPageContent({
   isAdmin,
 }: Props) {
   const productImage =
-    product.image || "/images/default-product.jpg";
+    product.image ||
+    "/images/default-product.jpg";
 
   const typeLabel =
     typeLabels[type] || "محصول";
@@ -70,18 +72,10 @@ export default function ProductPageContent({
         text-foreground
       "
     >
-      {/* =========================
-          BACK LINK
-      ========================= */}
-
       <BackLink
         href={`/products/${type}`}
         label={`بازگشت به ${typeLabel}`}
       />
-
-      {/* =========================
-          ADMIN
-      ========================= */}
 
       {isAdmin && (
         <div
@@ -98,10 +92,6 @@ export default function ProductPageContent({
           {/* Admin buttons */}
         </div>
       )}
-
-      {/* =========================
-          MAIN
-      ========================= */}
 
       <div
         className="
@@ -126,10 +116,6 @@ export default function ProductPageContent({
             xl:gap-14
           "
         >
-          {/* =========================
-              LEFT
-          ========================= */}
-
           <section
             className="
               min-w-0
@@ -139,9 +125,6 @@ export default function ProductPageContent({
             "
           >
             <div className="space-y-5">
-
-              {/* IMAGE */}
-
               <div
                 className="
                   overflow-hidden
@@ -172,12 +155,12 @@ export default function ProductPageContent({
                     discountPercentage={
                       product.discountPercentage
                     }
-                    currency={product.currency}
+                    currency={
+                      product.currency
+                    }
                   />
                 </div>
               </div>
-
-              {/* REGISTRATION */}
 
               <div
                 className="
@@ -196,22 +179,17 @@ export default function ProductPageContent({
                     product.discountedPrice ??
                     product.price
                   }
-                  currency={product.currency}
+                  currency={
+                    product.currency
+                  }
                   type={type}
                 />
               </div>
             </div>
           </section>
 
-          {/* =========================
-              RIGHT
-          ========================= */}
-
           <section className="min-w-0">
             <div className="space-y-6">
-
-              {/* BASIC INFO */}
-
               <div
                 className="
                   rounded-2xl
@@ -234,29 +212,23 @@ export default function ProductPageContent({
                   discountPercentage={
                     product.discountPercentage
                   }
-                  currency={product.currency}
-
-                  /*
-                   * duration فقط برای تور وجود دارد.
-                   * برای بقیه محصولات undefined ارسال می‌شود.
-                   */
-                  duration={
-                    product.duration ?? null
+                  currency={
+                    product.currency
                   }
-
+                  duration={
+                    product.duration ??
+                    null
+                  }
                   description={
                     product.description
                   }
-
                   shortDescription={
                     product.shortDescription
                   }
-
                   type={type}
                   isAdmin={isAdmin}
                 />
               </div>
-
             </div>
           </section>
         </div>

@@ -28,7 +28,7 @@ export default function BaleButton() {
         size="icon"
         icon={
           <Image
-            src="/icons/bale.svg"
+            src="/icons/logo82.png"
             alt="بله"
             width={32}
             height={32}
