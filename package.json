@@ -2,12 +2,12 @@
   "name": "my-site",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev",
-      "build": "prisma migrate deploy && next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
+"scripts": {
+  "dev": "next dev",
+  "build": "prisma migrate deploy && next build",
+  "start": "next start",
+  "lint": "eslint"
+},
   "dependencies": {
     "@icons-pack/react-simple-icons": "^13.11.1",
     "@prisma/client": "^6.19.3",
