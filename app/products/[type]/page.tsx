@@ -72,14 +72,60 @@ export default async function ProductListPage({
     // TOUR
     // ========================================
 
-    case "tour":
-      products = await prisma.tour.findMany({
-        where,
-        orderBy: {
-          createdAt: "desc",
-        },
-      });
-      break;
+    
+case "tour": {
+  console.log("[TOUR DEBUG] START");
+  console.log("[TOUR DEBUG] Type:", productType);
+  console.log("[TOUR DEBUG] Is admin:", isAdmin);
+  console.log("[TOUR DEBUG] Filter:", where);
+
+  try {
+    const total = await prisma.tour.count();
+
+    const published = await prisma.tour.count({
+      where: { isPublished: true },
+    });
+
+    console.log("[TOUR DEBUG] Total tours:", total);
+    console.log(
+      "[TOUR DEBUG] Published tours:",
+      published
+    );
+
+    products = await prisma.tour.findMany({
+      where,
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    console.log(
+      "[TOUR DEBUG] Returned products:",
+      products.length
+    );
+
+    console.log(
+      "[TOUR DEBUG] Tour records:",
+      products.map((tour) => ({
+        id: tour.id,
+        slug: tour.slug,
+        name: tour.name,
+        isPublished: tour.isPublished,
+      }))
+    );
+
+    console.log("[TOUR DEBUG] SUCCESS");
+  } catch (error) {
+    console.error(
+      "[TOUR DEBUG] DATABASE ERROR:",
+      error
+    );
+    throw error;
+  }
+
+  break;
+}
+
 
     // ========================================
     // TRAIN TICKET
