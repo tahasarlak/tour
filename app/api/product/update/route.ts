@@ -984,6 +984,61 @@ export async function POST(
       field === "image" ||
       field === "thumbImage"
     ) {
+      const directUrl =
+        typeof body.imageUrl === "string"
+          ? body.imageUrl.trim()
+          : "";
+
+      if (directUrl) {
+        let parsedUrl: URL;
+
+        try {
+          parsedUrl = new URL(directUrl);
+        } catch {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "آدرس عکس نامعتبر است.",
+            },
+            { status: 400 }
+          );
+        }
+
+        const validHost =
+          parsedUrl.hostname ===
+            "public.blob.vercel-storage.com" ||
+          parsedUrl.hostname.endsWith(
+            ".public.blob.vercel-storage.com"
+          );
+
+        if (
+          parsedUrl.protocol !== "https:" ||
+          !validHost
+        ) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "آدرس عکس مجاز نیست.",
+            },
+            { status: 400 }
+          );
+        }
+
+        const updated = await updateProduct(
+          type,
+          id,
+          field,
+          directUrl
+        );
+
+        return NextResponse.json({
+          success: true,
+          type,
+          field,
+          product: updated,
+        });
+      }
+
       const image =
         body.image;
 
