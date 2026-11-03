@@ -313,7 +313,8 @@ export default async function ProductPage({
   // ========================================
 
   const normalizedProduct = {
-    ...product,
+  ...product,
+  name: product.name ?? "",
 
     price: Number(product.price),
 
