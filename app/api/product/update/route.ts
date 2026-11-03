@@ -1092,13 +1092,41 @@ export async function POST(
       // UPDATE
       // ----------------------------------------------
 
-      const updated =
-        await updateProduct(
-          type,
-          id,
-          field,
-          blob.url
-        );
+      
+const updated = await updateProduct(
+  type,
+  id,
+  field,
+  directUrl
+);
+
+const savedImage =
+  (updated as Record<string, unknown>)[field];
+
+console.log("[IMAGE UPDATE DEBUG]", {
+  type,
+  id,
+  field,
+  receivedUrl: !!directUrl,
+  savedUrl: savedImage,
+  matches: savedImage === directUrl,
+});
+
+if (savedImage !== directUrl) {
+  throw new Error(
+    "Image URL was not saved correctly"
+  );
+}
+
+return NextResponse.json({
+  success: true,
+  type,
+  id,
+  field,
+  savedUrl: savedImage,
+  product: updated,
+});
+
 
       // ----------------------------------------------
       // DELETE OLD
