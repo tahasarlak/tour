@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import ProductCard from "@/components/ProductCard";
 import FeaturedSlider from "@/components/FeaturedSlider";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   // ==========================================
   // FEATURED TOURS
