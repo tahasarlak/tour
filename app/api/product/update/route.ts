@@ -1433,23 +1433,59 @@ return NextResponse.json({
         }
       }
 
-      const updated =
-        await updateProduct(
-          type,
-          id,
-          field,
-          value
-        );
+      
+console.log("[IMAGE UPDATE] REQUEST", {
+  type,
+  id,
+  field,
+  hasImageUrl: Boolean(directUrl),
+  imageUrlHost: parsedUrl.hostname,
+});
 
-      return NextResponse.json({
-        success: true,
-        type,
-        field,
-        value,
-        product: updated,
-        message:
-          "قیمت با موفقیت بروزرسانی شد.",
-      });
+const updated = await updateProduct(
+  type,
+  id,
+  field,
+  directUrl
+);
+
+const verified = await findProduct(type, id);
+
+const savedValue =
+  verified && field in verified
+    ? (verified as Record<string, unknown>)[field]
+    : null;
+
+console.log("[IMAGE UPDATE] RESULT", {
+  type,
+  id,
+  field,
+  savedValue,
+  matches: savedValue === directUrl,
+  updatedAt: verified?.updatedAt,
+});
+
+if (savedValue !== directUrl) {
+  console.error("[IMAGE UPDATE] DATABASE MISMATCH");
+
+  return NextResponse.json(
+    {
+      success: false,
+      error: "آدرس عکس در دیتابیس ذخیره نشد.",
+    },
+    { status: 500 }
+  );
+}
+
+return NextResponse.json({
+  success: true,
+  type,
+  id,
+  field,
+  savedUrl: savedValue,
+  updatedAt: verified?.updatedAt,
+});
+
     }
 
     // ====================================================
@@ -1480,23 +1516,7 @@ return NextResponse.json({
         );
       }
 
-      const updated =
-        await updateProduct(
-          type,
-          id,
-          field,
-          value
-        );
-
-      return NextResponse.json({
-        success: true,
-        type,
-        field,
-        value,
-        product: updated,
-        message:
-          "تاریخ با موفقیت بروزرسانی شد.",
-      });
+      
     }
 
     // ====================================================
