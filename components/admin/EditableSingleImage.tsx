@@ -2,23 +2,29 @@
 "use client";
 
 import Image from "next/image";
-import { uploadPresigned as upload } from "@vercel/blob/client";
 import { useEffect, useState } from "react";
-
 import EditButton from "../Button/EditButton";
+
+type ProductType =
+  | "tour"
+  | "train"
+  | "flight"
+  | "bus"
+  | "accommodation"
+  | "visa";
 
 type Props = {
   id: number;
   field?: "image";
   src: string;
-  type?: string;
+  type: ProductType;
 };
 
 export default function EditableSingleImage({
   id,
   field = "image",
   src,
-  type = "product",
+  type,
 }: Props) {
   const [edit, setEdit] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -45,6 +51,15 @@ export default function EditableSingleImage({
     setSaving(true);
 
     try {
+      console.log("[IMAGE] 1. Starting upload", {
+        id,
+        type,
+        field,
+        fileName: file.name,
+        fileSize: file.size,
+        contentType: file.type,
+      });
+
       const allowedTypes = [
         "image/jpeg",
         "image/png",
@@ -56,8 +71,8 @@ export default function EditableSingleImage({
         throw new Error("فرمت تصویر پشتیبانی نمی‌شود.");
       }
 
-      if (file.size > 15 * 1024 * 1024) {
-        throw new Error("حداکثر حجم تصویر ۱۵ مگابایت است.");
+      if (file.size <= 0 || file.size > 15 * 1024 * 1024) {
+        throw new Error("حجم تصویر باید کمتر از ۱۵ مگابایت باشد.");
       }
 
       const safeName = file.name.replace(
@@ -65,48 +80,159 @@ export default function EditableSingleImage({
         "-"
       );
 
-      const blob = await upload(
-        `products/${type}/${id}/${Date.now()}-${safeName}`,
-        file,
+      const pathname =
+        `products/${type}/${id}/${Date.now()}-${safeName}`;
+
+      // STEP 1: GET PRESIGNED URL
+      console.log("[IMAGE] 2. Requesting upload URL");
+
+      const authResponse = await fetch(
+        "/api/blob/upload",
         {
-          access: "public",
-          handleUploadUrl: "/api/blob/upload",
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            pathname,
+            contentType: file.type,
+            size: file.size,
+          }),
         }
       );
 
-      const response = await fetch("/api/product/update", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          id,
-          type,
-          field,
-          imageUrl: blob.url,
-          oldUrl: src,
-        }),
+      const authResult = await authResponse.json();
+
+      console.log("[IMAGE] 3. Authorization response", {
+        status: authResponse.status,
+        success: authResult.success,
+        error: authResult.error,
       });
 
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
+      if (!authResponse.ok || !authResult.success) {
         throw new Error(
-          result.error ||
-          result.message ||
-          "ذخیره عکس ناموفق بود."
+          authResult.error || "دریافت مجوز آپلود ناموفق بود."
         );
       }
 
+      const presignedUrl = authResult.presignedUrl;
+      const blobUrl = authResult.blobUrl;
+
+      if (!presignedUrl || !blobUrl) {
+        throw new Error("آدرس آپلود از سرور دریافت نشد.");
+      }
+
+      // STEP 2: UPLOAD TO VERCEL BLOB
+      console.log("[IMAGE] 4. Uploading to Blob", {
+        pathname,
+        size: file.size,
+      });
+
+      const uploadResponse = await fetch(
+        presignedUrl,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": file.type,
+          },
+          body: file,
+        }
+      );
+
+      console.log("[IMAGE] 5. Blob upload response", {
+        status: uploadResponse.status,
+        ok: uploadResponse.ok,
+      });
+
+      if (!uploadResponse.ok) {
+        const responseText =
+          await uploadResponse.text();
+
+        console.error("[IMAGE] Blob PUT failed", {
+          status: uploadResponse.status,
+          response: responseText.slice(0, 1500),
+        });
+
+        throw new Error(
+          `آپلود Blob ناموفق بود. کد: ${uploadResponse.status}`
+        );
+      }
+
+      console.log("[IMAGE] 6. Blob upload successful");
+
+      // STEP 3: SAVE URL IN DATABASE
+      console.log("[IMAGE] 7. Saving URL in Neon");
+
+      const updateResponse = await fetch(
+        "/api/product/update",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id,
+            type,
+            field,
+            imageUrl: blobUrl,
+            oldUrl: src,
+          }),
+        }
+      );
+
+      const updateResult =
+        await updateResponse.json();
+
+      console.log("[IMAGE] 8. Database response", {
+        status: updateResponse.status,
+        success: updateResult.success,
+        error: updateResult.error,
+        savedUrl: updateResult.savedUrl,
+      });
+
+      if (!updateResponse.ok || !updateResult.success) {
+        throw new Error(
+          updateResult.error ||
+          "ذخیره آدرس تصویر در دیتابیس ناموفق بود."
+        );
+      }
+
+      if (
+        updateResult.savedUrl &&
+        updateResult.savedUrl !== blobUrl
+      ) {
+        throw new Error(
+          "آدرس ذخیره‌شده با آدرس تصویر جدید مطابقت ندارد."
+        );
+      }
+
+      console.log("[IMAGE] 9. COMPLETE", {
+        id,
+        type,
+        field,
+        blobUrl,
+      });
+
       setFile(null);
       setEdit(false);
+
       window.location.reload();
+
     } catch (err) {
-      setError(
+      const message =
         err instanceof Error
           ? err.message
-          : "خطای ناشناخته هنگام آپلود عکس"
-      );
+          : "خطای ناشناخته هنگام آپلود عکس";
+
+      console.error("[IMAGE] UPLOAD FAILED", {
+        message,
+        id,
+        type,
+        field,
+      });
+
+      setError(message);
+
     } finally {
       setSaving(false);
     }
@@ -114,6 +240,7 @@ export default function EditableSingleImage({
 
   const cancel = () => {
     if (saving) return;
+
     setFile(null);
     setError("");
     setEdit(false);
@@ -148,7 +275,9 @@ export default function EditableSingleImage({
                 className="hidden"
                 disabled={saving}
                 onChange={(event) => {
-                  const selected = event.target.files?.[0];
+                  const selected =
+                    event.target.files?.[0];
+
                   setFile(selected || null);
                   setError("");
                 }}
