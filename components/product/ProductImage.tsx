@@ -1,14 +1,22 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
 
 import EditableSingleImage from "../admin/EditableSingleImage";
-import EditableField from "../admin/EditableField";
+
+type ProductType =
+  | "tour"
+  | "train"
+  | "flight"
+  | "bus"
+  | "accommodation"
+  | "visa";
 
 type Props = {
   id: number;
   src: string;
-  type: string;
+  type: ProductType;
   discountedPrice: number | null;
   discountPercentage: number | null;
   currency: string | null;
@@ -45,33 +53,12 @@ export default function ProductImage({
     checkAdmin();
   }, []);
 
-  const hasDiscount =
-    discountPercentage !== null &&
-    discountPercentage > 0 &&
-    discountedPrice !== null;
-
-  const showDiscount = isAdmin || hasDiscount;
-
   return (
-    <div
-      className="
-        relative
-        w-full
-        overflow-hidden
-        rounded-xl
-        bg-background
-      "
-    >
+    <div className="relative w-full overflow-hidden rounded-xl bg-background">
       <div
         className="
-          relative
-          mx-auto
-          flex
-          w-full
-          max-w-[420px]
-          items-center
-          justify-center
-          aspect-[4/5]
+          relative mx-auto flex w-full max-w-[420px]
+          aspect-[4/5] items-center justify-center
           sm:max-w-[460px]
           md:aspect-[4/5]
           lg:max-w-[480px]
@@ -85,8 +72,6 @@ export default function ProductImage({
           />
         </div>
       </div>
-
-
     </div>
   );
 }
