@@ -312,11 +312,13 @@ export default async function ProductPage({
   // NORMALIZE PRICE
   // ========================================
 
-  const normalizedProduct = {
+  
+const normalizedProduct = {
   ...product,
   name: product.name ?? "",
 
-    price: Number(product.price),
+  price: Number(product.price),
+
 
     discountedPrice:
       product.discountedPrice !== null
