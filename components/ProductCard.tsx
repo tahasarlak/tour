@@ -169,11 +169,13 @@ export default function ProductCard({
       {/* CONTENT */}
       <div className="flex flex-1 flex-col p-3 sm:p-4 md:p-6">
         {/* NAME */}
-        <div className="mb-2 flex h-[56px] items-start">
-          <h3 className="line-clamp-2 text-xl font-bold text-card-foreground transition-colors group-hover:text-primary">
-            {name}
-          </h3>
-        </div>
+    
+<div className="mb-2 min-w-0">
+  <h3 className="line-clamp-2 break-words text-base font-bold leading-7 text-card-foreground sm:text-lg">
+    {name}
+  </h3>
+</div>
+
 
         {/* DESCRIPTION */}
         <div className="mb-1 flex h-[48px] items-start">
