@@ -143,9 +143,7 @@ export default async function ProductListPage({
   // NO PRODUCTS
   // ==========================================
 
-  if (products.length === 0) {
-    notFound();
-  }
+  
 
   // ==========================================
   // TITLES
