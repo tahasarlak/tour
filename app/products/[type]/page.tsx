@@ -11,6 +11,8 @@ import {
   type ProductType,
 } from "@/lib/product-types";
 
+export const dynamic = "force-dynamic";
+
 type Props = {
   params: Promise<{
     type: string;
