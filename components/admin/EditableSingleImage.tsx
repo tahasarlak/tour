@@ -2,7 +2,7 @@
 "use client";
 
 import Image from "next/image";
-import { upload } from "@vercel/blob/client";
+import { uploadPresigned as upload } from "@vercel/blob/client";
 import { useEffect, useState } from "react";
 
 import EditButton from "../Button/EditButton";
