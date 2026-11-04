@@ -2,105 +2,65 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { uploadPresigned } from "@vercel/blob/client";
 
 import Button from "@/components/ui/Button";
-import {
-  type ProductType,
-} from "@/lib/product-types";
-
-type FormState = {
-  name: string;
-  price: string;
-  currency: string;
-  discountedPrice: string;
-  discountPercentage: string;
-  shortDescription: string;
-  description: string;
-  image: File | null;
-  thumbImage: File | null;
-  origin: string;
-  destination: string;
-  departureDate: string;
-  isSpecial: boolean;
-};
+import type { ProductType } from "@/lib/product-types";
 
 type Props = {
   type: ProductType;
   buttonText?: string;
   title?: string;
   submitText?: string;
-  showDescription?: boolean;
-  showPrice?: boolean;
-  showDiscount?: boolean;
-  showCurrency?: boolean;
-  showImage?: boolean;
-  defaultCurrency?: string;
-  apiUrl?: string;
   redirectTo?: string;
 };
 
-function createInitialForm(defaultCurrency: string): FormState {
-  return {
-    name: "",
-    price: "",
-    currency: defaultCurrency,
-    discountedPrice: "",
-    discountPercentage: "",
-    shortDescription: "",
-    description: "",
-    image: null,
-    thumbImage: null,
-    origin: "",
-    destination: "",
-    departureDate: "",
-    isSpecial: false,
-  };
-}
+type CreatedProduct = {
+  id: number;
+  slug: string;
+};
 
-function defaultApiForType(type: ProductType): string {
-  switch (type) {
-    case "train": return "/api/train/create";
-    case "flight": return "/api/flight/create";
-    case "bus": return "/api/bus/create";
-    default: return "/api/product/create";
-  }
-}
+const ALLOWED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/avif",
+];
 
-function typeLabel(type: ProductType): string {
-  switch (type) {
-    case "train": return "بلیت قطار";
-    case "flight": return "بلیت هواپیما";
-    case "bus": return "بلیت اتوبوس";
-    default: return "بلیت";
-  }
-}
+const MAX_IMAGE_SIZE = 15 * 1024 * 1024;
+
+const TYPE_LABELS: Record<ProductType, string> = {
+  tour: "تور",
+  train: "بلیط قطار",
+  flight: "بلیط هواپیما",
+  bus: "بلیط اتوبوس",
+  accommodation: "اقامتگاه",
+  visa: "ویزای توریستی",
+};
 
 export default function CreateButton({
   type,
   buttonText = "+ ساخت مورد جدید",
   title,
-  submitText = "ساخت",
-  showDescription = true,
-  showPrice = true,
-  showDiscount = true,
-  showCurrency = true,
-  showImage = true,
-  defaultCurrency = "تومان",
-  apiUrl,
+  submitText = "ساخت محصول",
   redirectTo,
 }: Props) {
   const router = useRouter();
+
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+  const [image, setImage] = useState<File | null>(null);
 
-  const [form, setForm] = useState<FormState>(() => createInitialForm(defaultCurrency));
-
-  const resolvedApiUrl = apiUrl || defaultApiForType(type);
-  const resolvedTitle = title || `ساخت ${typeLabel(type)}`;
+  const resolvedTitle =
+    title || `ساخت ${TYPE_LABELS[type]} جدید`;
 
   function resetForm() {
-    setForm(createInitialForm(defaultCurrency));
+    setName("");
+    setPrice("");
+    setImage(null);
     setErrorMessage("");
   }
 
@@ -111,244 +71,372 @@ export default function CreateButton({
 
   function closeModal() {
     if (loading) return;
+
     setOpen(false);
     setErrorMessage("");
   }
 
-  function update<K extends keyof FormState>(key: K, value: FormState[K]) {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  }
-
-  // ====================== قیمت و تخفیف ======================
-  function handlePriceChange(value: string) {
-    update("price", value);
-
-    const price = Number(value);
-    const percentage = Number(form.discountPercentage);
-
-    if (Number.isFinite(price) && price > 0 && Number.isFinite(percentage) && form.discountPercentage !== "") {
-      const discounted = Math.round(price - (price * percentage) / 100);
-      update("discountedPrice", String(discounted));
-    }
-  }
-
-  function handleDiscountedPriceChange(value: string) {
-    const price = Number(form.price);
-    if (!value) {
-      setForm((prev) => ({ ...prev, discountedPrice: "", discountPercentage: "" }));
-      return;
-    }
-    const discounted = Number(value);
-    if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(discounted)) {
-      update("discountedPrice", value);
-      return;
-    }
-    const percentage = Math.round(((price - discounted) / price) * 100);
-    setForm((prev) => ({
-      ...prev,
-      discountedPrice: value,
-      discountPercentage: String(Math.max(0, Math.min(100, percentage))),
-    }));
-  }
-
-  function handleDiscountPercentageChange(value: string) {
-    if (!value) {
-      setForm((prev) => ({ ...prev, discountPercentage: "", discountedPrice: "" }));
-      return;
-    }
-    let percentage = Number(value);
-    if (!Number.isFinite(percentage)) percentage = 0;
-    percentage = Math.max(0, Math.min(100, percentage));
-
-    const price = Number(form.price);
-    const discounted = price > 0 ? Math.round(price - (price * percentage) / 100) : "";
-    setForm((prev) => ({
-      ...prev,
-      discountPercentage: String(percentage),
-      discountedPrice: discounted ? String(discounted) : "",
-    }));
-  }
-
-  // ====================== اعتبارسنجی ======================
-  function validate(): string | null {
-    if (!form.name.trim()) return "لطفاً نام را وارد کنید.";
-    if (showPrice && (!form.price.trim() || !Number.isFinite(Number(form.price)) || Number(form.price) < 0)) {
-      return "لطفاً قیمت معتبر وارد کنید.";
-    }
-    if (!form.origin.trim()) return "مبدا بلیت الزامی است.";
-    if (!form.destination.trim()) return "مقصد بلیت الزامی است.";
-    if (!form.departureDate) return "تاریخ حرکت بلیت الزامی است.";
-    return null;
-  }
-
-  // ====================== ساخت ======================
   async function create() {
     if (loading) return;
+
     setErrorMessage("");
 
-    const validationError = validate();
-    if (validationError) {
-      setErrorMessage(validationError);
+    const cleanName = name.trim();
+    const cleanPrice = price.trim().replace(/,/g, "");
+    const numericPrice = Number(cleanPrice);
+
+    if (!cleanName) {
+      setErrorMessage("لطفاً نام محصول را وارد کنید.");
+      return;
+    }
+
+    if (
+      !cleanPrice ||
+      !Number.isFinite(numericPrice) ||
+      numericPrice < 0
+    ) {
+      setErrorMessage("لطفاً قیمت معتبر وارد کنید.");
+      return;
+    }
+
+    if (!image || image.size <= 0) {
+      setErrorMessage("لطفاً تصویر محصول را انتخاب کنید.");
+      return;
+    }
+
+    if (!ALLOWED_IMAGE_TYPES.includes(image.type)) {
+      setErrorMessage(
+        "فرمت تصویر باید JPG، PNG، WEBP یا AVIF باشد."
+      );
+      return;
+    }
+
+    if (image.size > MAX_IMAGE_SIZE) {
+      setErrorMessage("حداکثر حجم تصویر ۱۵ مگابایت است.");
       return;
     }
 
     setLoading(true);
 
+    let createdProduct: CreatedProduct | null = null;
+    let imageWarning = "";
+
     try {
-      const formData = new FormData();
-      formData.append("type", type);
-      formData.append("name", form.name.trim());
+      // 1. ایجاد محصول به‌صورت پیش‌نویس
 
-      if (showPrice) formData.append("price", form.price.trim() || "0");
-      if (showCurrency) formData.append("currency", form.currency.trim() || defaultCurrency);
-      if (showDiscount) {
-        formData.append("discountPercentage", form.discountPercentage.trim());
-        formData.append("discountedPrice", form.discountedPrice.trim());
-      }
-      formData.append("shortDescription", form.shortDescription.trim());
+      const createResponse = await fetch(
+        "/api/product/create",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type,
+            name: cleanName,
+            price: cleanPrice,
+            currency: "تومان",
+          }),
+        }
+      );
 
-      if (showDescription) formData.append("description", form.description.trim());
+      const createResult =
+        await createResponse.json().catch(() => null);
 
-      if (showImage && form.image) formData.append("image", form.image);
-      if (showImage && form.thumbImage) formData.append("thumbImage", form.thumbImage);
-
-      // فیلدهای اجباری بلیت‌ها
-      formData.append("origin", form.origin.trim());
-      formData.append("destination", form.destination.trim());
-      formData.append("departureDate", form.departureDate);
-
-      formData.append("isSpecial", form.isSpecial ? "true" : "false");
-
-      const res = await fetch(resolvedApiUrl, { method: "POST", body: formData });
-
-      const contentType = res.headers.get("content-type") || "";
-      const responseText = await res.text();
-      let result: any = null;
-
-      if (contentType.includes("application/json")) {
-        result = responseText ? JSON.parse(responseText) : null;
-      } else {
-        if (!res.ok) throw new Error(responseText?.trim() || `خطای سرور: ${res.status}`);
-        throw new Error("سرور پاسخ JSON برنگرداند.");
+      if (
+        !createResponse.ok ||
+        !createResult?.success ||
+        !createResult?.product?.id ||
+        !createResult?.product?.slug
+      ) {
+        throw new Error(
+          createResult?.error ||
+            createResult?.message ||
+            "ساخت محصول ناموفق بود."
+        );
       }
 
-      if (!res.ok || (result && result.success === false)) {
-        throw new Error(result?.error || result?.message || "ساخت اطلاعات ناموفق بود.");
+      const created: CreatedProduct = {
+        id: Number(createResult.product.id),
+        slug: String(createResult.product.slug),
+      };
+
+      createdProduct = created;
+
+      // 2. آپلود یک تصویر به Vercel Blob
+
+      try {
+        const safeName = image.name
+          .normalize("NFKD")
+          .replace(/[^a-zA-Z0-9._-]/g, "-")
+          .replace(/-+/g, "-");
+
+        const pathname =
+          `products/${type}/${created.id}/${Date.now()}-${safeName || "image"}`;
+
+        console.log("[CREATE PRODUCT IMAGE] Starting", {
+          type,
+          id: created.id,
+          pathname,
+          fileName: image.name,
+          fileSize: image.size,
+          contentType: image.type,
+        });
+
+        const blob = await uploadPresigned(
+          pathname,
+          image,
+          {
+            access: "public",
+            handleUploadUrl: "/api/blob/upload",
+            contentType: image.type,
+          }
+        );
+
+        if (!blob?.url) {
+          throw new Error(
+            "آدرس تصویر از Vercel Blob دریافت نشد."
+          );
+        }
+
+        console.log("[CREATE PRODUCT IMAGE] Uploaded", {
+          id: created.id,
+          url: blob.url,
+        });
+
+        // 3. ذخیره آدرس تصویر در دیتابیس
+
+        const updateResponse = await fetch(
+          "/api/product/update",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              id: created.id,
+              type,
+              field: "image",
+              imageUrl: blob.url,
+            }),
+          }
+        );
+
+        const updateResult =
+          await updateResponse.json().catch(() => null);
+
+        if (
+          !updateResponse.ok ||
+          !updateResult?.success
+        ) {
+          throw new Error(
+            updateResult?.error ||
+              updateResult?.message ||
+              "ذخیره آدرس تصویر ناموفق بود."
+          );
+        }
+
+        console.log(
+          "[CREATE PRODUCT IMAGE] Saved in database",
+          {
+            id: created.id,
+            savedUrl: updateResult.savedUrl,
+          }
+        );
+
+      } catch (imageError) {
+        console.error(
+          "[CREATE PRODUCT IMAGE] Upload failed",
+          {
+            type,
+            id: created.id,
+            error:
+              imageError instanceof Error
+                ? imageError.message
+                : String(imageError),
+          }
+        );
+
+        imageWarning =
+          "محصول ساخته شد، اما عکس ذخیره نشد. می‌توانی عکس را از صفحه جزئیات دوباره آپلود کنی.";
       }
+
+      // 4. انتقال به صفحه جزئیات
 
       setOpen(false);
       resetForm();
-      if (redirectTo) router.push(redirectTo);
-      else router.refresh();
+
+      if (imageWarning) {
+        window.alert(imageWarning);
+      }
+
+      const detailUrl =
+        `/products/${type}/${created.slug}`;
+
+      router.push(redirectTo || detailUrl);
+      router.refresh();
+
     } catch (error) {
-      const message = error instanceof Error ? error.message : "خطا در ساخت اطلاعات.";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "خطا در ساخت محصول.";
+
+      console.error("[CREATE PRODUCT] Failed", {
+        type,
+        name: cleanName,
+        hasImage: Boolean(image),
+        createdProduct,
+        message,
+      });
+
       setErrorMessage(message);
-      alert(message);
+
     } finally {
       setLoading(false);
     }
   }
 
-  // ====================== کلاس‌های استایل ======================
-  const inputClass = `
-    w-full rounded-2xl border border-slate-700 bg-slate-800 px-5 py-4 text-lg text-white outline-none
-    placeholder:text-slate-500 focus:border-amber-400
-  `;
-  const smallInputClass = `
-    w-full rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3 text-white outline-none
-    placeholder:text-slate-500 focus:border-amber-400
-  `;
-  const textareaClass = `
-    w-full resize-none rounded-2xl border border-slate-700 bg-slate-800 px-5 py-4 text-lg text-white outline-none
-    placeholder:text-slate-500 focus:border-amber-400
-  `;
+  const inputClass =
+    "w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3.5 text-base text-white outline-none placeholder:text-slate-400 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20";
 
   return (
     <>
-      <Button variant="primary" size="lg" onClick={openModal}>{buttonText}</Button>
+      <Button
+        variant="primary"
+        size="lg"
+        onClick={openModal}
+      >
+        {buttonText}
+      </Button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-4">
-          <div className="my-8 w-full max-w-3xl rounded-3xl border border-amber-400/30 bg-slate-900 p-6 shadow-2xl md:p-8">
-            <h2 className="text-2xl font-bold text-white mb-2">{resolvedTitle}</h2>
-            <p className="text-sm text-slate-400">نوع اطلاعات: {typeLabel(type)}</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-3 sm:p-4">
+          <div className="my-4 max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-3xl border border-amber-400/30 bg-slate-900 p-5 shadow-2xl sm:p-7">
+
+            <div className="mb-6">
+              <h2 className="text-xl font-bold text-white sm:text-2xl">
+                {resolvedTitle}
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                فقط نام، قیمت و یک تصویر را وارد کن.
+                محصول ابتدا به‌صورت پیش‌نویس ساخته می‌شود
+                و بقیه اطلاعات را در صفحه جزئیات تکمیل می‌کنی.
+              </p>
+            </div>
 
             {errorMessage && (
-              <div className="mt-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-red-300 text-sm">
+              <div
+                role="alert"
+                className="mb-5 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm leading-6 text-red-300"
+              >
                 {errorMessage}
               </div>
             )}
 
-            <div className="space-y-5 mt-6">
-              {/* بخش پایه */}
-              <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
-                <h3 className="mb-4 font-bold text-amber-400">اطلاعات پایه</h3>
-                <div className="space-y-4">
-                  <input type="text" placeholder="نام *" value={form.name} onChange={(e) => update("name", e.target.value)} className={inputClass} />
+            <div className="space-y-5">
 
-                  {showPrice && (
-                    <input type="number" min="0" placeholder="قیمت اصلی *" value={form.price} onChange={(e) => handlePriceChange(e.target.value)} className={inputClass} />
-                  )}
+              {/* NAME */}
 
-                  {showCurrency && (
-                    <input type="text" placeholder="ارز" value={form.currency} onChange={(e) => update("currency", e.target.value)} className={inputClass} />
-                  )}
-
-                  {showDiscount && (
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <input type="number" min="0" placeholder="قیمت تخفیفی" value={form.discountedPrice} onChange={(e) => handleDiscountedPriceChange(e.target.value)} className={smallInputClass} />
-                      <input type="number" min="0" max="100" placeholder="درصد تخفیف" value={form.discountPercentage} onChange={(e) => handleDiscountPercentageChange(e.target.value)} className={smallInputClass} />
-                    </div>
-                  )}
-
-                  <textarea placeholder="توضیح کوتاه" value={form.shortDescription} onChange={(e) => update("shortDescription", e.target.value)} rows={3} className={textareaClass} />
-
-                  {showDescription && (
-                    <textarea placeholder="توضیحات کامل" value={form.description} onChange={(e) => update("description", e.target.value)} rows={5} className={textareaClass} />
-                  )}
-                </div>
-              </div>
-
-              {/* تصاویر */}
-              {showImage && (
-                <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
-                  <h3 className="mb-4 font-bold text-amber-400">تصاویر</h3>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <label className="mb-2 block text-sm text-slate-400">تصویر اصلی</label>
-                      <input type="file" accept="image/*" onChange={(e) => update("image", e.target.files?.[0] || null)} className="block w-full text-sm text-slate-400 file:mr-4 file:rounded-xl file:border-0 file:bg-amber-500 file:px-5 file:py-3 file:font-bold file:text-slate-900" />
-                    </div>
-                    <div>
-                      <label className="mb-2 block text-sm text-slate-400">تصویر thumbnail</label>
-                      <input type="file" accept="image/*" onChange={(e) => update("thumbImage", e.target.files?.[0] || null)} className="block w-full text-sm text-slate-400 file:mr-4 file:rounded-xl file:border-0 file:bg-amber-500 file:px-5 file:py-3 file:font-bold file:text-slate-900" />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* مسیر و زمان‌بندی (فقط اجباری) */}
-              <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
-                <h3 className="mb-4 font-bold text-amber-400">مسیر و زمان‌بندی</h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <input placeholder="مبدا *" value={form.origin} onChange={(e) => update("origin", e.target.value)} className={smallInputClass} />
-                  <input placeholder="مقصد *" value={form.destination} onChange={(e) => update("destination", e.target.value)} className={smallInputClass} />
-                  <input type="datetime-local" placeholder="تاریخ حرکت *" value={form.departureDate} onChange={(e) => update("departureDate", e.target.value)} className={smallInputClass} />
-                </div>
-              </div>
-
-              {/* گزینه محصول ویژه */}
-              <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
-                <h3 className="mb-4 font-bold text-amber-400">تنظیمات</h3>
-                <label className="flex cursor-pointer items-center gap-3 text-slate-300">
-                  <input type="checkbox" checked={form.isSpecial} onChange={(e) => update("isSpecial", e.target.checked)} className="h-5 w-5 accent-amber-500" />
-                  محصول ویژه
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-200">
+                  نام محصول *
                 </label>
+
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(event) =>
+                    setName(event.target.value)
+                  }
+                  placeholder="مثلاً تور تابستانی سوچی"
+                  className={inputClass}
+                  disabled={loading}
+                  autoFocus
+                />
               </div>
+
+              {/* PRICE */}
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-200">
+                  قیمت به تومان *
+                </label>
+
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  inputMode="decimal"
+                  value={price}
+                  onChange={(event) =>
+                    setPrice(event.target.value)
+                  }
+                  placeholder="مثلاً ۱۲۵۰۰۰۰۰"
+                  className={inputClass}
+                  disabled={loading}
+                />
+              </div>
+
+              {/* IMAGE */}
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-200">
+                  تصویر اصلی محصول *
+                </label>
+
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/avif"
+                  onChange={(event) => {
+                    setImage(
+                      event.target.files?.[0] || null
+                    );
+                    setErrorMessage("");
+                  }}
+                  className="block w-full cursor-pointer rounded-xl border border-slate-700 bg-slate-800 p-3 text-sm text-slate-300 file:ml-3 file:rounded-lg file:border-0 file:bg-amber-400 file:px-4 file:py-2 file:font-bold file:text-slate-950"
+                  disabled={loading}
+                />
+
+                <p className="mt-2 text-xs leading-5 text-slate-400">
+                  JPG، PNG، WEBP یا AVIF — حداکثر ۱۵ مگابایت
+                </p>
+
+                {image && (
+                  <div className="mt-3 rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2 text-sm text-slate-200">
+                    فایل انتخاب‌شده: {image.name}
+                    {" "}({(image.size / 1024 / 1024).toFixed(2)} مگابایت)
+                  </div>
+                )}
+              </div>
+
             </div>
 
-            <div className="mt-8 flex gap-4">
-              <Button variant="primary" size="lg" loading={loading} onClick={create} className="flex-1">{submitText}</Button>
-              <Button variant="secondary" size="lg" onClick={closeModal} className="flex-1">لغو</Button>
+            {/* ACTIONS */}
+
+            <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row">
+
+              <Button
+                variant="primary"
+                size="lg"
+                loading={loading}
+                onClick={create}
+                className="flex-1"
+              >
+                {submitText}
+              </Button>
+
+              <Button
+                variant="secondary"
+                size="lg"
+                onClick={closeModal}
+                className="flex-1"
+                disabled={loading}
+              >
+                لغو
+              </Button>
+
             </div>
           </div>
         </div>
