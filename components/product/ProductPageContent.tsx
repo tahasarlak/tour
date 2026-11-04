@@ -7,8 +7,6 @@ import ProductBasicInfo from "./ProductBasicInfo";
 import BackLink from "../Button/BackLinkButton";
 import type { ProductType } from "@/lib/product-types";
 
-const FALLBACK_IMAGE = "/images/logo.png";
-
 export type ProductPageProduct = {
   id: number;
   name: string;
@@ -31,6 +29,8 @@ type Props = {
   isAdmin: boolean;
 };
 
+const DEFAULT_IMAGE = "/images/logo.png";
+
 const typeLabels: Record<ProductType, string> = {
   tour: "تور",
   train: "بلیط قطار",
@@ -45,9 +45,9 @@ export default function ProductPageContent({
   product,
   isAdmin,
 }: Props) {
-  // عکس پیش‌فرض برای محصولات بدون تصویر
+  // اگر عکس خالی باشد، لوگوی سایت نمایش داده می‌شود.
   const productImage =
-    product.image?.trim() || FALLBACK_IMAGE;
+    product.image?.trim() || DEFAULT_IMAGE;
 
   const hasRegistration =
     Boolean(product.name?.trim()) ||
@@ -56,7 +56,6 @@ export default function ProductPageContent({
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-
       <BackLink
         href={`/products/${type}`}
         label={`بازگشت به ${typeLabels[type]}`}
@@ -66,10 +65,12 @@ export default function ProductPageContent({
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-10 xl:gap-14">
 
-          {/* ستون تصویر و ثبت سفارش */}
+          {/* IMAGE AND REGISTRATION */}
+
           <section className="min-w-0 space-y-5 lg:sticky lg:top-6 lg:self-start">
 
-            {/* تصویر محصول همیشه نمایش داده می‌شود */}
+            {/* تصویر همیشه نمایش داده می‌شود */}
+
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow)]">
 
               <div className="mx-auto w-full max-w-[520px] p-3 sm:p-4 lg:p-5">
@@ -84,10 +85,10 @@ export default function ProductPageContent({
                 />
 
               </div>
-
             </div>
 
             {/* اطلاعات ثبت سفارش فقط در صورت وجود اطلاعات */}
+
             {hasRegistration && (
               <div className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow)] sm:p-5">
 
@@ -106,7 +107,8 @@ export default function ProductPageContent({
 
           </section>
 
-          {/* ستون اطلاعات محصول */}
+          {/* PRODUCT DETAILS */}
+
           <section className="min-w-0">
 
             <ProductBasicInfo
@@ -129,9 +131,7 @@ export default function ProductPageContent({
           </section>
 
         </div>
-
       </div>
-
     </main>
   );
 }
