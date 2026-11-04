@@ -1,16 +1,39 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { put } from "@vercel/blob";
 import { getAdminSession } from "@/lib/auth";
 
-type Body = Record<string, unknown>;
+import {
+  PRODUCT_TYPES,
+  type ProductType,
+} from "@/lib/product-types";
 
-// =========================================================
-// SLUG
-// =========================================================
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-function createSlug(text: string): string {
-  const slug = text
+type CreateBody = {
+  type?: unknown;
+  name?: unknown;
+  price?: unknown;
+  currency?: unknown;
+};
+
+function isProductType(
+  value: unknown
+): value is ProductType {
+  return PRODUCT_TYPES.includes(
+    value as ProductType
+  );
+}
+
+// ==========================================
+// CREATE SLUG
+// ==========================================
+
+function createBaseSlug(
+  name: string,
+  type: ProductType
+): string {
+  const slug = name
     .toLowerCase()
     .trim()
     .normalize("NFKD")
@@ -21,874 +44,404 @@ function createSlug(text: string): string {
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
 
-  return slug || `bus-${Date.now()}`;
+  return slug || `${type}-${Date.now()}`;
 }
 
-// =========================================================
+// ==========================================
+// CHECK SLUG
+// ==========================================
+
+async function slugExists(
+  type: ProductType,
+  slug: string
+): Promise<boolean> {
+  switch (type) {
+    case "tour":
+      return Boolean(
+        await prisma.tour.findUnique({
+          where: { slug },
+          select: { id: true },
+        })
+      );
+
+    case "train":
+      return Boolean(
+        await prisma.trainTicket.findUnique({
+          where: { slug },
+          select: { id: true },
+        })
+      );
+
+    case "flight":
+      return Boolean(
+        await prisma.flightTicket.findUnique({
+          where: { slug },
+          select: { id: true },
+        })
+      );
+
+    case "bus":
+      return Boolean(
+        await prisma.busTicket.findUnique({
+          where: { slug },
+          select: { id: true },
+        })
+      );
+
+    case "accommodation":
+      return Boolean(
+        await prisma.accommodation.findUnique({
+          where: { slug },
+          select: { id: true },
+        })
+      );
+
+    case "visa":
+      return Boolean(
+        await prisma.touristVisa.findUnique({
+          where: { slug },
+          select: { id: true },
+        })
+      );
+  }
+}
+
+// ==========================================
 // UNIQUE SLUG
-// =========================================================
+// ==========================================
 
 async function getUniqueSlug(
-  baseSlug: string
+  type: ProductType,
+  name: string
 ): Promise<string> {
-  let slug = baseSlug || `bus-${Date.now()}`;
-  let counter = 1;
+  const baseSlug = createBaseSlug(name, type);
 
-  while (true) {
-    const existing =
-      await prisma.busTicket.findUnique({
-        where: {
-          slug,
-        },
-        select: {
-          id: true,
-        },
-      });
+  let candidate = baseSlug;
+  let suffix = 1;
 
-    if (!existing) {
-      return slug;
-    }
-
-    counter++;
-    slug = `${baseSlug}-${counter}`;
-  }
-}
-
-// =========================================================
-// ARRAY
-// =========================================================
-
-function parseArray(
-  value: unknown
-): string[] {
-  if (Array.isArray(value)) {
-    return value
-      .map((item) =>
-        String(item).trim()
-      )
-      .filter(Boolean);
-  }
-
-  if (typeof value === "string") {
-    try {
-      const parsed =
-        JSON.parse(value);
-
-      if (Array.isArray(parsed)) {
-        return parsed
-          .map((item) =>
-            String(item).trim()
-          )
-          .filter(Boolean);
-      }
-    } catch {
-      return value
-        .split("\n")
-        .map((item) =>
-          item.trim()
-        )
-        .filter(Boolean);
-    }
-  }
-
-  return [];
-}
-
-// =========================================================
-// BOOLEAN
-// =========================================================
-
-function parseBoolean(
-  value: unknown
-): boolean {
-  if (typeof value === "boolean") {
-    return value;
-  }
-
-  if (typeof value === "string") {
-    return (
-      value.toLowerCase() ===
-        "true" ||
-      value === "1"
-    );
-  }
-
-  return Boolean(value);
-}
-
-// =========================================================
-// DATE
-// =========================================================
-
-function parseDate(
-  value: unknown
-): Date | null {
-  if (!value) {
-    return null;
-  }
-
-  const date = new Date(
-    String(value)
-  );
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
+  while (
+    await slugExists(type, candidate)
   ) {
-    return null;
+    candidate = `${baseSlug}-${suffix}`;
+    suffix++;
   }
 
-  return date;
+  return candidate;
 }
 
-// =========================================================
-// INTEGER
-// =========================================================
-
-function parseInteger(
-  value: unknown
-): number | null {
-  if (
-    value === undefined ||
-    value === null ||
-    value === ""
-  ) {
-    return null;
-  }
-
-  const number = Number(value);
-
-  if (!Number.isInteger(number)) {
-    return null;
-  }
-
-  return number;
-}
-
-// =========================================================
+// ==========================================
 // POST
-// =========================================================
+// ==========================================
 
 export async function POST(
-  req: Request
+  request: Request
 ) {
   try {
-    // =====================================================
     // ADMIN AUTH
-    // =====================================================
 
-    const session =
-      await getAdminSession();
+    const session = await getAdminSession();
 
     if (!session) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            "دسترسی غیرمجاز.",
+          error: "دسترسی غیرمجاز است.",
         },
-        {
-          status: 401,
-        }
+        { status: 401 }
       );
     }
 
-    // =====================================================
-    // BODY
-    // =====================================================
+    // READ BODY
 
-    let body: Body = {};
+    let body: CreateBody;
 
-    const contentType =
-      req.headers.get(
-        "content-type"
-      ) || "";
-
-    if (
-      contentType.includes(
-        "application/json"
-      )
-    ) {
-      const text =
-        await req.text();
-
-      if (!text.trim()) {
-        return NextResponse.json(
-          {
-            success: false,
-            error:
-              "اطلاعاتی ارسال نشده است.",
-          },
-          {
-            status: 400,
-          }
-        );
-      }
-
-      try {
-        body =
-          JSON.parse(text);
-      } catch {
-        return NextResponse.json(
-          {
-            success: false,
-            error:
-              "JSON نامعتبر است.",
-          },
-          {
-            status: 400,
-          }
-        );
-      }
-    } else if (
-      contentType.includes(
-        "multipart/form-data"
-      )
-    ) {
-      const formData =
-        await req.formData();
-
-      formData.forEach(
-        (value, key) => {
-          body[key] = value;
-        }
-      );
-    } else {
+    try {
+      body = await request.json();
+    } catch {
       return NextResponse.json(
         {
           success: false,
-          error:
-            "نوع درخواست نامعتبر است.",
+          error: "اطلاعات ارسالی معتبر نیست.",
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
 
-    // =====================================================
+    // PRODUCT TYPE
+
+    const typeValue = String(
+      body.type ?? ""
+    ).trim();
+
+    if (!isProductType(typeValue)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "نوع محصول معتبر نیست.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const type: ProductType = typeValue;
+
     // NAME
-    // =====================================================
 
     const name = String(
-      body.name || ""
+      body.name ?? ""
     ).trim();
 
     if (!name) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            "نام بلیت اتوبوس الزامی است.",
+          error: "نام محصول الزامی است.",
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
 
-    // =====================================================
-    // ORIGIN
-    // =====================================================
-
-    const origin = String(
-      body.origin || ""
-    ).trim();
-
-    if (!origin) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "مبدا الزامی است.",
-        },
-        {
-          status: 400,
-        }
-      );
-    }
-
-    // =====================================================
-    // DESTINATION
-    // =====================================================
-
-    const destination =
-      String(
-        body.destination || ""
-      ).trim();
-
-    if (!destination) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "مقصد الزامی است.",
-        },
-        {
-          status: 400,
-        }
-      );
-    }
-
-    // =====================================================
     // PRICE
-    // =====================================================
 
-    const price = String(
-      body.price ?? "0"
-    ).trim();
+    const priceText = String(
+      body.price ?? ""
+    )
+      .replace(/,/g, "")
+      .trim();
 
-    if (!price) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "قیمت بلیت الزامی است.",
-        },
-        {
-          status: 400,
-        }
-      );
-    }
-
-    const numericPrice =
-      Number(price);
+    const numericPrice = Number(priceText);
 
     if (
-      !Number.isFinite(
-        numericPrice
-      ) ||
+      !priceText ||
+      !Number.isFinite(numericPrice) ||
       numericPrice < 0
     ) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            "قیمت نامعتبر است.",
+          error: "قیمت محصول معتبر نیست.",
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
 
-    // =====================================================
     // CURRENCY
-    // =====================================================
 
     const currency =
-      body.currency !==
-        undefined &&
-      String(
-        body.currency
-      ).trim()
-        ? String(
-            body.currency
-          ).trim()
-        : "تومان";
+      String(body.currency ?? "تومان").trim() ||
+      "تومان";
 
-    // =====================================================
     // SLUG
-    // =====================================================
 
-    const requestedSlug =
-      String(
-        body.slug || ""
-      ).trim();
+    const slug = await getUniqueSlug(
+      type,
+      name
+    );
 
-    const baseSlug =
-      requestedSlug
-        ? createSlug(
-            requestedSlug
-          )
-        : createSlug(name);
+    // ======================================
+    // CREATE DRAFT
+    // ======================================
 
-    const slug =
-      await getUniqueSlug(
-        baseSlug
-      );
+    let product: {
+      id: number;
+      slug: string;
+    } | null = null;
 
-    // =====================================================
-    // DISCOUNT
-    // =====================================================
+    switch (type) {
 
-    let discountPercentage =
-      Number(
-        body.discountPercentage ||
-          0
-      );
+      // TOUR
 
-    if (
-      !Number.isFinite(
-        discountPercentage
-      )
-    ) {
-      discountPercentage = 0;
-    }
+      case "tour": {
+        product = await prisma.tour.create({
+          data: {
+            name,
+            slug,
+            price: priceText,
+            currency,
+            destination: "",
+            isPublished: false,
+          },
+          select: {
+            id: true,
+            slug: true,
+          },
+        });
 
-    discountPercentage =
-      Math.max(
-        0,
-        Math.min(
-          100,
-          Math.round(
-            discountPercentage
-          )
-        )
-      );
+        break;
+      }
 
-    // =====================================================
-    // DISCOUNTED PRICE
-    // =====================================================
+      // TRAIN
 
-    let discountedPrice:
-      | string
-      | null = null;
+      case "train": {
+        product =
+          await prisma.trainTicket.create({
+            data: {
+              name,
+              slug,
+              price: priceText,
+              currency,
+              isPublished: false,
+            },
+            select: {
+              id: true,
+              slug: true,
+            },
+          });
 
-    const discountedInput =
-      String(
-        body.discountedPrice ||
-          ""
-      ).trim();
+        break;
+      }
 
-    if (discountedInput) {
-      const numericDiscounted =
-        Number(
-          discountedInput
-        );
+      // FLIGHT
 
-      if (
-        Number.isFinite(
-          numericDiscounted
-        ) &&
-        numericDiscounted >= 0 &&
-        numericDiscounted <
-          numericPrice
-      ) {
-        discountedPrice =
-          String(
-            numericDiscounted
-          );
+      case "flight": {
+        product =
+          await prisma.flightTicket.create({
+            data: {
+              name,
+              slug,
+              price: priceText,
+              currency,
+              isPublished: false,
+            },
+            select: {
+              id: true,
+              slug: true,
+            },
+          });
 
-        if (
-          discountPercentage ===
-            0 &&
-          numericPrice > 0
-        ) {
-          discountPercentage =
-            Math.round(
-              (
-                (numericPrice -
-                  numericDiscounted) /
-                numericPrice
-              ) *
-                100
-            );
-        }
+        break;
+      }
+
+      // BUS
+
+      case "bus": {
+        product =
+          await prisma.busTicket.create({
+            data: {
+              name,
+              slug,
+              price: priceText,
+              currency,
+              isPublished: false,
+            },
+            select: {
+              id: true,
+              slug: true,
+            },
+          });
+
+        break;
+      }
+
+      // ACCOMMODATION
+
+      case "accommodation": {
+        product =
+          await prisma.accommodation.create({
+            data: {
+              name,
+              slug,
+              price: priceText,
+              currency,
+              city: "",
+              isPublished: false,
+            },
+            select: {
+              id: true,
+              slug: true,
+            },
+          });
+
+        break;
+      }
+
+      // VISA
+
+      case "visa": {
+        product =
+          await prisma.touristVisa.create({
+            data: {
+              name,
+              slug,
+              price: priceText,
+              currency,
+              country: "",
+              isPublished: false,
+            },
+            select: {
+              id: true,
+              slug: true,
+            },
+          });
+
+        break;
       }
     }
 
-    if (
-      discountPercentage > 0 &&
-      !discountedPrice &&
-      numericPrice > 0
-    ) {
-      discountedPrice =
-        String(
-          Math.round(
-            numericPrice -
-              (numericPrice *
-                discountPercentage) /
-                100
-          )
-        );
-    }
-
-    // =====================================================
-    // IMAGE
-    // =====================================================
-
-    let imageUrl:
-      | string
-      | null = null;
-
-    const image =
-      body.image;
-
-    if (
-      image instanceof File &&
-      image.size > 0
-    ) {
-      const blob =
-        await put(
-          `bus-tickets/${image.name}`,
-          image,
-          {
-            access: "public",
-            addRandomSuffix:
-              true,
-          }
-        );
-
-      imageUrl =
-        blob.url;
-    }
-
-    // =====================================================
-    // THUMB IMAGE
-    // =====================================================
-
-    let thumbImageUrl:
-      | string
-      | null = null;
-
-    const thumbImage =
-      body.thumbImage;
-
-    if (
-      thumbImage instanceof File &&
-      thumbImage.size > 0
-    ) {
-      const blob =
-        await put(
-          `bus-tickets/thumbs/${thumbImage.name}`,
-          thumbImage,
-          {
-            access: "public",
-            addRandomSuffix:
-              true,
-          }
-        );
-
-      thumbImageUrl =
-        blob.url;
-    }
-
-    // =====================================================
-    // DEPARTURE DATE
-    // =====================================================
-
-    const departureDate =
-      parseDate(
-        body.departureDate
-      );
-
-    if (!departureDate) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "تاریخ حرکت الزامی و نامعتبر است.",
-        },
-        {
-          status: 400,
-        }
+    if (!product) {
+      throw new Error(
+        "ساخت محصول در دیتابیس انجام نشد."
       );
     }
 
-    // =====================================================
-    // ARRIVAL DATE
-    // =====================================================
-
-    const arrivalDate =
-      parseDate(
-        body.arrivalDate
-      );
-
-    // =====================================================
-    // CAPACITY
-    // =====================================================
-
-    const capacity =
-      parseInteger(
-        body.capacity
-      );
-
-    const remainingCapacity =
-      body.remainingCapacity !==
-      undefined
-        ? parseInteger(
-            body.remainingCapacity
-          )
-        : capacity;
-
-    // =====================================================
-    // BUS TICKET
-    // =====================================================
-
-    const busTicket =
-      await prisma.busTicket.create(
-        {
-          data: {
-            // -------------------------------------------------
-            // BASIC
-            // -------------------------------------------------
-
-            name,
-            slug,
-
-            price,
-            currency,
-
-            discountedPrice,
-            discountPercentage,
-
-            shortDescription:
-              String(
-                body.shortDescription ||
-                  ""
-              ).trim() || null,
-
-            description:
-              String(
-                body.description ||
-                  ""
-              ).trim() || null,
-
-            image: imageUrl,
-
-            thumbImage:
-              thumbImageUrl,
-
-            gallery:
-              parseArray(
-                body.gallery
-              ),
-
-            // -------------------------------------------------
-            // ROUTE
-            // -------------------------------------------------
-
-            origin,
-
-            destination,
-
-            originCity:
-              String(
-                body.originCity ||
-                  ""
-              ).trim() || null,
-
-            destinationCity:
-              String(
-                body.destinationCity ||
-                  ""
-              ).trim() || null,
-
-            originTerminal:
-              String(
-                body.originTerminal ||
-                  ""
-              ).trim() || null,
-
-            destinationTerminal:
-              String(
-                body.destinationTerminal ||
-                  ""
-              ).trim() || null,
-
-            originCode:
-              String(
-                body.originCode ||
-                  ""
-              ).trim() || null,
-
-            destinationCode:
-              String(
-                body.destinationCode ||
-                  ""
-              ).trim() || null,
-
-            // -------------------------------------------------
-            // BUS
-            // -------------------------------------------------
-
-            busCompany:
-              String(
-                body.busCompany ||
-                  ""
-              ).trim() || null,
-
-            busName:
-              String(
-                body.busName ||
-                  ""
-              ).trim() || null,
-
-            busNumber:
-              String(
-                body.busNumber ||
-                  ""
-              ).trim() || null,
-
-            busType:
-              String(
-                body.busType ||
-                  ""
-              ).trim() || null,
-
-            // -------------------------------------------------
-            // DATE / TIME
-            // -------------------------------------------------
-
-            departureDate,
-
-            arrivalDate,
-
-            departureTime:
-              String(
-                body.departureTime ||
-                  ""
-              ).trim() || null,
-
-            arrivalTime:
-              String(
-                body.arrivalTime ||
-                  ""
-              ).trim() || null,
-
-            duration:
-              String(
-                body.duration ||
-                  ""
-              ).trim() || null,
-
-            // -------------------------------------------------
-            // SEAT
-            // -------------------------------------------------
-
-            seatType:
-              String(
-                body.seatType ||
-                  ""
-              ).trim() || null,
-
-            seatClass:
-              String(
-                body.seatClass ||
-                  ""
-              ).trim() || null,
-
-            // -------------------------------------------------
-            // CAPACITY
-            // -------------------------------------------------
-
-            capacity,
-
-            remainingCapacity,
-
-            // -------------------------------------------------
-            // BAGGAGE
-            // -------------------------------------------------
-
-            baggage:
-              String(
-                body.baggage ||
-                  ""
-              ).trim() || null,
-
-            // -------------------------------------------------
-            // POLICIES
-            // -------------------------------------------------
-
-            refundPolicy:
-              String(
-                body.refundPolicy ||
-                  ""
-              ).trim() || null,
-
-            cancellationPolicy:
-              String(
-                body.cancellationPolicy ||
-                  ""
-              ).trim() || null,
-
-            // -------------------------------------------------
-            // FACILITIES
-            // -------------------------------------------------
-
-            facilities:
-              parseArray(
-                body.facilities
-              ),
-
-            requirements:
-              parseArray(
-                body.requirements
-              ),
-
-            // -------------------------------------------------
-            // STATUS
-            // -------------------------------------------------
-
-            isSpecial:
-              parseBoolean(
-                body.isSpecial
-              ),
-
-            // بلیت جدید همیشه مخفی
-            isPublished: false,
-          },
-        }
-      );
-
-    // =====================================================
-    // RESPONSE
-    // =====================================================
+    console.log(
+      "[PRODUCT CREATE] Draft created",
+      {
+        type,
+        id: product.id,
+        slug: product.slug,
+        name,
+        price: priceText,
+        isPublished: false,
+      }
+    );
 
     return NextResponse.json(
       {
         success: true,
-        type: "bus",
+        type,
+        product,
         message:
-          "بلیت اتوبوس با موفقیت ساخته شد.",
-        busTicket,
+          "محصول به‌صورت پیش‌نویس ساخته شد.",
       },
-      {
-        status: 201,
-      }
+      { status: 201 }
     );
-  } catch (error: any) {
+
+  } catch (error) {
     console.error(
-      "Bus ticket create error:",
+      "[PRODUCT CREATE] Error",
       error
     );
 
-    // =====================================================
-    // DUPLICATE SLUG
-    // =====================================================
+    const code =
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error
+        ? String(
+            (error as { code?: unknown }).code
+          )
+        : "";
 
-    if (
-      error?.code ===
-      "P2002"
-    ) {
+    if (code === "P2002") {
       return NextResponse.json(
         {
           success: false,
           error:
-            "این slug قبلاً استفاده شده است.",
+            "این شناسه قبلاً استفاده شده است. دوباره تلاش کن.",
         },
-        {
-          status: 409,
-        }
+        { status: 409 }
       );
     }
-
-    // =====================================================
-    // GENERAL ERROR
-    // =====================================================
 
     return NextResponse.json(
       {
         success: false,
         error:
-          error?.message ||
-          "خطا در ساخت بلیت اتوبوس.",
+          error instanceof Error
+            ? error.message
+            : "خطا در ساخت محصول.",
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 }
