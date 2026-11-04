@@ -1,6 +1,10 @@
 
 import { NextResponse } from "next/server";
-import { issueSignedToken, presignUrl } from "@vercel/blob";
+import {
+  issueSignedToken,
+  presignUrl,
+  parseStoreIdFromDelegationToken,
+} from "@vercel/blob";
 import { getAdminSession } from "@/lib/auth";
 
 export const runtime = "nodejs";
@@ -14,79 +18,109 @@ const allowedContentTypes = [
 
 const maxSize = 15 * 1024 * 1024;
 
-const validPathPattern =
+const validPath =
   /^products\/(tour|train|flight|bus|accommodation|visa)\/[1-9]\d*\/[a-zA-Z0-9._-]+$/;
 
 export async function POST(request: Request) {
   try {
-    console.log("[BLOB] 1. Upload authorization started");
-
-    // ADMIN AUTH
+    // 1. ADMIN AUTH
     const session = await getAdminSession();
 
     if (!session) {
-      console.error("[BLOB] Unauthorized request");
-
       return NextResponse.json(
-        { success: false, error: "دسترسی غیرمجاز است." },
+        {
+          success: false,
+          error: "دسترسی غیرمجاز است.",
+        },
         { status: 401 }
       );
     }
 
-    // ENVIRONMENT CHECK
-    const storeId = process.env.BLOB_STORE_ID;
-    const oidcToken = process.env.VERCEL_OIDC_TOKEN;
+    // 2. BLOB CONFIGURATION
+    const storeId = process.env.BLOB_STORE_ID?.trim();
+    const hasReadWriteToken = Boolean(
+      process.env.BLOB_READ_WRITE_TOKEN
+    );
 
-    console.log("[BLOB] 2. Environment check", {
+    console.log("[BLOB CONFIG]", {
       hasStoreId: Boolean(storeId),
-      hasOidcToken: Boolean(oidcToken),
-      hasReadWriteToken: Boolean(
-        process.env.BLOB_READ_WRITE_TOKEN
+      hasReadWriteToken,
+      hasOidcRequestHeader: Boolean(
+        request.headers.get("x-vercel-oidc-token")
+      ),
+      hasOidcEnvironment: Boolean(
+        process.env.VERCEL_OIDC_TOKEN
+      ),
+      hasWebhookKey: Boolean(
+        process.env.BLOB_WEBHOOK_PUBLIC_KEY
       ),
     });
 
-    if (!storeId || !oidcToken) {
-      throw new Error(
-        "BLOB_STORE_ID یا VERCEL_OIDC_TOKEN تنظیم نشده است."
+    if (!storeId && !hasReadWriteToken) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "اتصال Blob به پروژه کامل نیست. پروژه را از قسمت Projects در Blob Store متصل کن.",
+        },
+        { status: 500 }
       );
     }
 
-    // REQUEST BODY
+    // 3. READ BODY
     const body = await request.json();
 
     const pathname = String(body.pathname || "").trim();
     const contentType = String(body.contentType || "").trim();
     const size = Number(body.size);
 
-    console.log("[BLOB] 3. Upload request", {
+    console.log("[BLOB REQUEST]", {
       pathname,
       contentType,
       size,
     });
 
-    // VALIDATE PATH
-    if (!validPathPattern.test(pathname)) {
-      throw new Error("مسیر ذخیره تصویر نامعتبر است.");
+    // 4. VALIDATE PATH
+    if (!validPath.test(pathname)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "مسیر آپلود معتبر نیست.",
+        },
+        { status: 400 }
+      );
     }
 
-    // VALIDATE CONTENT TYPE
+    // 5. VALIDATE CONTENT TYPE
     if (!allowedContentTypes.includes(contentType)) {
-      throw new Error("فرمت تصویر مجاز نیست.");
+      return NextResponse.json(
+        {
+          success: false,
+          error: "فرمت تصویر مجاز نیست.",
+        },
+        { status: 400 }
+      );
     }
 
-    // VALIDATE SIZE
+    // 6. VALIDATE SIZE
     if (
       !Number.isFinite(size) ||
       size <= 0 ||
       size > maxSize
     ) {
-      throw new Error("حجم تصویر نامعتبر است.");
+      return NextResponse.json(
+        {
+          success: false,
+          error: "حجم تصویر باید حداکثر ۱۵ مگابایت باشد.",
+        },
+        { status: 400 }
+      );
     }
 
     const validUntil = Date.now() + 10 * 60 * 1000;
 
-    // ISSUE SIGNED TOKEN
-    console.log("[BLOB] 4. Requesting signed token");
+    // 7. ISSUE SIGNED TOKEN
+    console.log("[BLOB] Creating signed token");
 
     const signedToken = await issueSignedToken({
       pathname,
@@ -94,20 +128,15 @@ export async function POST(request: Request) {
       validUntil,
       allowedContentTypes: [contentType],
       maximumSizeInBytes: maxSize,
-      storeId,
+      ...(storeId ? { storeId } : {}),
     });
 
-    console.log("[BLOB] 5. Signed token created", {
-      hasDelegationToken: Boolean(
-        signedToken.delegationToken
-      ),
-      hasClientSigningToken: Boolean(
-        signedToken.clientSigningToken
-      ),
-      validUntil: signedToken.validUntil,
+    console.log("[BLOB] Signed token created", {
+      success: Boolean(signedToken.delegationToken),
+      expiresAt: signedToken.validUntil,
     });
 
-    // GENERATE PRESIGNED URL
+    // 8. CREATE PRESIGNED URL
     const { presignedUrl } = await presignUrl(
       signedToken,
       {
@@ -123,19 +152,23 @@ export async function POST(request: Request) {
     );
 
     if (!presignedUrl) {
-      throw new Error("Presigned URL ساخته نشد.");
+      throw new Error("ساخت آدرس آپلود ناموفق بود.");
     }
 
-    // NORMALIZE STORE ID
-    const normalizedStoreId = storeId.replace(/^store_/, "");
+    // 9. GET REAL STORE ID FROM SIGNED TOKEN
+    const normalizedStoreId =
+      parseStoreIdFromDelegationToken(
+        signedToken.delegationToken
+      );
 
+    // 10. CREATE PUBLIC BLOB URL
     const blobUrl =
       `https://${normalizedStoreId}.public.blob.vercel-storage.com/${pathname}`;
 
-    console.log("[BLOB] 6. Presigned URL generated", {
-      host: new URL(presignedUrl).host,
+    console.log("[BLOB] Presigned URL ready", {
       pathname,
-      blobHost: new URL(blobUrl).host,
+      blobHost: new URL(blobUrl).hostname,
+      success: true,
     });
 
     return NextResponse.json({
@@ -151,7 +184,7 @@ export async function POST(request: Request) {
         ? error.message
         : "خطای ناشناخته Blob";
 
-    console.error("[BLOB] UPLOAD AUTHORIZATION FAILED", {
+    console.error("[BLOB UPLOAD ERROR]", {
       name:
         error instanceof Error
           ? error.name
