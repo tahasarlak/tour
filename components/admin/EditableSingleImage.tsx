@@ -2,35 +2,20 @@
 "use client";
 
 import Image from "next/image";
-import { uploadPresigned } from "@vercel/blob/client";
+import { uploadPresigned as upload } from "@vercel/blob/client";
 import { useEffect, useState } from "react";
 
 import EditButton from "../Button/EditButton";
+import type { ProductType } from "@/lib/product-types";
 
 type Props = {
   id: number;
   field?: "image";
   src: string;
-  type?: string;
+  type?: ProductType;
 };
 
-const ALLOWED_TYPES = [
-  "tour",
-  "train",
-  "flight",
-  "bus",
-  "accommodation",
-  "visa",
-];
-
-const ALLOWED_CONTENT_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/avif",
-];
-
-const MAX_FILE_SIZE = 15 * 1024 * 1024;
+const DEFAULT_IMAGE = "/images/logo.png";
 
 export default function EditableSingleImage({
   id,
@@ -43,58 +28,43 @@ export default function EditableSingleImage({
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  const [displaySrc, setDisplaySrc] = useState(
+    src?.trim() || DEFAULT_IMAGE
+  );
+
+  const [usingFallback, setUsingFallback] = useState(
+    !src?.trim() || src === DEFAULT_IMAGE
+  );
+
   const [imageError, setImageError] = useState(false);
 
-  // ==========================================
-  // CHECK ADMIN
-  // ==========================================
-
   useEffect(() => {
-    let active = true;
-
-    const checkAdmin = async () => {
-      try {
-        const response = await fetch("/api/auth/check", {
-          cache: "no-store",
-        });
-
-        if (!response.ok) {
-          if (active) setIsAdmin(false);
-          return;
-        }
-
-        const data = await response.json();
-
-        if (active) {
-          setIsAdmin(data.isAdmin === true);
-        }
-      } catch (err) {
-        console.error("[IMAGE] Admin check failed:", err);
-
-        if (active) {
-          setIsAdmin(false);
-        }
-      }
-    };
-
-    checkAdmin();
-
-    return () => {
-      active = false;
-    };
+    fetch("/api/auth/check")
+      .then((res) => res.json())
+      .then((data) => setIsAdmin(data.isAdmin === true))
+      .catch(() => setIsAdmin(false));
   }, []);
 
-  // ==========================================
-  // RESET IMAGE ERROR
-  // ==========================================
-
+  // با تغییر عکس، وضعیت نمایش مجدداً تنظیم می‌شود.
   useEffect(() => {
+    const initialSrc = src?.trim() || DEFAULT_IMAGE;
+
+    setDisplaySrc(initialSrc);
+    setUsingFallback(initialSrc === DEFAULT_IMAGE);
     setImageError(false);
   }, [src]);
 
-  // ==========================================
-  // SAVE IMAGE
-  // ==========================================
+  // اگر عکس اصلی خراب بود، لوگو جایگزین شود.
+  const handleImageError = () => {
+    if (!usingFallback) {
+      setDisplaySrc(DEFAULT_IMAGE);
+      setUsingFallback(true);
+      setImageError(false);
+    } else {
+      setImageError(true);
+    }
+  };
 
   const save = async () => {
     if (!isAdmin || !file || saving) return;
@@ -103,7 +73,27 @@ export default function EditableSingleImage({
     setSaving(true);
 
     try {
-      console.log("[IMAGE] 1. Starting upload", {
+      const allowedTypes = [
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "image/avif",
+      ];
+
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error("فرمت تصویر پشتیبانی نمی‌شود.");
+      }
+
+      if (file.size > 15 * 1024 * 1024) {
+        throw new Error("حداکثر حجم تصویر ۱۵ مگابایت است.");
+      }
+
+      const safeName = file.name.replace(
+        /[^a-zA-Z0-9._-]/g,
+        "-"
+      );
+
+      console.log("[IMAGE] Starting upload", {
         id,
         type,
         field,
@@ -112,78 +102,17 @@ export default function EditableSingleImage({
         contentType: file.type,
       });
 
-      // ======================================
-      // VALIDATE PRODUCT TYPE
-      // ======================================
-
-      if (!ALLOWED_TYPES.includes(type)) {
-        throw new Error("نوع محصول معتبر نیست.");
-      }
-
-      // ======================================
-      // VALIDATE IMAGE
-      // ======================================
-
-      if (!ALLOWED_CONTENT_TYPES.includes(file.type)) {
-        throw new Error("فرمت تصویر پشتیبانی نمی‌شود.");
-      }
-
-      if (file.size <= 0) {
-        throw new Error("فایل تصویر خالی است.");
-      }
-
-      if (file.size > MAX_FILE_SIZE) {
-        throw new Error("حداکثر حجم تصویر ۱۵ مگابایت است.");
-      }
-
-      // ======================================
-      // CREATE SAFE PATHNAME
-      // ======================================
-
-      const safeName = file.name
-        .normalize("NFKD")
-        .replace(/[^a-zA-Z0-9._-]/g, "-")
-        .replace(/-+/g, "-");
-
-      const pathname =
-        `products/${type}/${id}/${Date.now()}-${safeName || "image"}`;
-
-      console.log("[IMAGE] 2. Requesting presigned upload", {
-        pathname,
-      });
-
-      // ======================================
-      // UPLOAD TO VERCEL BLOB
-      // ======================================
-
-      const blob = await uploadPresigned(
-        pathname,
+      const blob = await upload(
+        `products/${type}/${id}/${Date.now()}-${safeName}`,
         file,
         {
           access: "public",
           handleUploadUrl: "/api/blob/upload",
-          contentType: file.type,
         }
       );
 
-      if (!blob?.url) {
-        throw new Error("آدرس تصویر از Vercel Blob دریافت نشد.");
-      }
-
-      console.log("[IMAGE] 3. Blob upload successful", {
-        pathname: blob.pathname,
+      console.log("[IMAGE] Upload completed", {
         url: blob.url,
-        contentType: blob.contentType,
-      });
-
-      // ======================================
-      // SAVE IMAGE URL IN DATABASE
-      // ======================================
-
-      console.log("[IMAGE] 4. Updating database", {
-        id,
-        type,
-        field,
       });
 
       const response = await fetch("/api/product/update", {
@@ -196,36 +125,30 @@ export default function EditableSingleImage({
           type,
           field,
           imageUrl: blob.url,
-          oldUrl: src,
+
+          // فقط آدرس عکس قبلی Blob ارسال شود.
+          oldUrl: src?.includes(
+            ".public.blob.vercel-storage.com/"
+          )
+            ? src
+            : "",
         }),
       });
 
-      const result = await response.json().catch(() => null);
+      const result = await response.json();
 
-      console.log("[IMAGE] 5. Database response", {
+      console.log("[IMAGE] Database response", {
         status: response.status,
-        success: result?.success,
-        error: result?.error,
+        result,
       });
 
-      if (!response.ok || !result?.success) {
+      if (!response.ok || !result.success) {
         throw new Error(
-          result?.error ||
-          result?.message ||
-          "تصویر آپلود شد اما ذخیره در دیتابیس ناموفق بود."
+          result.error ||
+          result.message ||
+          "ذخیره عکس ناموفق بود."
         );
       }
-
-      // ======================================
-      // SUCCESS
-      // ======================================
-
-      console.log("[IMAGE] 6. COMPLETE", {
-        id,
-        type,
-        field,
-        url: blob.url,
-      });
 
       setFile(null);
       setEdit(false);
@@ -233,60 +156,18 @@ export default function EditableSingleImage({
       window.location.reload();
 
     } catch (err) {
-      console.error("[IMAGE] UPLOAD FAILED", {
-        message:
-          err instanceof Error
-            ? err.message
-            : String(err),
-        id,
-        type,
-        field,
-      });
+      console.error("[IMAGE] Upload failed", err);
 
       setError(
         err instanceof Error
           ? err.message
-          : "خطای ناشناخته هنگام آپلود تصویر."
+          : "خطای ناشناخته هنگام آپلود عکس"
       );
 
     } finally {
       setSaving(false);
     }
   };
-
-  // ==========================================
-  // CLEAR IMAGE (OPTIONAL FIELD)
-  // ==========================================
-
-  const clearImage = async () => {
-    if (!isAdmin || !src || saving) return;
-
-    setError("");
-    setSaving(true);
-
-    try {
-      const response = await fetch("/api/product/update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, type, field, imageUrl: "" }),
-      });
-      const result = await response.json().catch(() => null);
-
-      if (!response.ok || !result?.success) {
-        throw new Error(result?.error || "حذف تصویر انجام نشد.");
-      }
-
-      window.location.reload();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "حذف تصویر انجام نشد.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // ==========================================
-  // CANCEL
-  // ==========================================
 
   const cancel = () => {
     if (saving) return;
@@ -296,28 +177,26 @@ export default function EditableSingleImage({
     setEdit(false);
   };
 
-  // ==========================================
-  // RENDER
-  // ==========================================
-
   return (
     <div className="group relative h-full w-full overflow-hidden rounded-xl bg-background">
 
-      {src && !imageError ? (
+      {/* IMAGE */}
+
+      {!imageError ? (
         <Image
-          src={src}
+          src={displaySrc}
           alt="تصویر محصول"
           fill
           priority
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 40vw"
           className="object-contain p-2"
-          onError={() => setImageError(true)}
+          onError={handleImageError}
         />
       ) : (
-        <div className="flex h-full min-h-48 w-full items-center justify-center bg-muted p-4 text-center text-sm text-muted-foreground">
-          تصویر موجود نیست
-        </div>
+        <div className="h-full min-h-48 w-full bg-background" />
       )}
+
+      {/* ADMIN CONTROLS */}
 
       {isAdmin && (
         <div className="absolute bottom-3 right-3 z-20 max-w-[calc(100%-1.5rem)] opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
@@ -355,17 +234,6 @@ export default function EditableSingleImage({
                 {saving ? "در حال آپلود..." : "ذخیره"}
               </button>
 
-              {src && (
-                <button
-                  type="button"
-                  onClick={clearImage}
-                  disabled={saving}
-                  className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-600 disabled:opacity-50"
-                >
-                  حذف تصویر
-                </button>
-              )}
-
               <button
                 type="button"
                 onClick={cancel}
@@ -397,6 +265,7 @@ export default function EditableSingleImage({
 
         </div>
       )}
+
     </div>
   );
 }
