@@ -2,29 +2,41 @@
 "use client";
 
 import Image from "next/image";
+import { uploadPresigned } from "@vercel/blob/client";
 import { useEffect, useState } from "react";
-import EditButton from "../Button/EditButton";
 
-type ProductType =
-  | "tour"
-  | "train"
-  | "flight"
-  | "bus"
-  | "accommodation"
-  | "visa";
+import EditButton from "../Button/EditButton";
 
 type Props = {
   id: number;
   field?: "image";
   src: string;
-  type: ProductType;
+  type?: string;
 };
+
+const ALLOWED_TYPES = [
+  "tour",
+  "train",
+  "flight",
+  "bus",
+  "accommodation",
+  "visa",
+];
+
+const ALLOWED_CONTENT_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/avif",
+];
+
+const MAX_FILE_SIZE = 15 * 1024 * 1024;
 
 export default function EditableSingleImage({
   id,
   field = "image",
   src,
-  type,
+  type = "tour",
 }: Props) {
   const [edit, setEdit] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -33,16 +45,56 @@ export default function EditableSingleImage({
   const [error, setError] = useState("");
   const [imageError, setImageError] = useState(false);
 
+  // ==========================================
+  // CHECK ADMIN
+  // ==========================================
+
   useEffect(() => {
-    fetch("/api/auth/check")
-      .then((res) => res.json())
-      .then((data) => setIsAdmin(data.isAdmin === true))
-      .catch(() => setIsAdmin(false));
+    let active = true;
+
+    const checkAdmin = async () => {
+      try {
+        const response = await fetch("/api/auth/check", {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          if (active) setIsAdmin(false);
+          return;
+        }
+
+        const data = await response.json();
+
+        if (active) {
+          setIsAdmin(data.isAdmin === true);
+        }
+      } catch (err) {
+        console.error("[IMAGE] Admin check failed:", err);
+
+        if (active) {
+          setIsAdmin(false);
+        }
+      }
+    };
+
+    checkAdmin();
+
+    return () => {
+      active = false;
+    };
   }, []);
+
+  // ==========================================
+  // RESET IMAGE ERROR
+  // ==========================================
 
   useEffect(() => {
     setImageError(false);
   }, [src]);
+
+  // ==========================================
+  // SAVE IMAGE
+  // ==========================================
 
   const save = async () => {
     if (!isAdmin || !file || saving) return;
@@ -60,157 +112,119 @@ export default function EditableSingleImage({
         contentType: file.type,
       });
 
-      const allowedTypes = [
-        "image/jpeg",
-        "image/png",
-        "image/webp",
-        "image/avif",
-      ];
+      // ======================================
+      // VALIDATE PRODUCT TYPE
+      // ======================================
 
-      if (!allowedTypes.includes(file.type)) {
+      if (!ALLOWED_TYPES.includes(type)) {
+        throw new Error("نوع محصول معتبر نیست.");
+      }
+
+      // ======================================
+      // VALIDATE IMAGE
+      // ======================================
+
+      if (!ALLOWED_CONTENT_TYPES.includes(file.type)) {
         throw new Error("فرمت تصویر پشتیبانی نمی‌شود.");
       }
 
-      if (file.size <= 0 || file.size > 15 * 1024 * 1024) {
-        throw new Error("حجم تصویر باید کمتر از ۱۵ مگابایت باشد.");
+      if (file.size <= 0) {
+        throw new Error("فایل تصویر خالی است.");
       }
 
-      const safeName = file.name.replace(
-        /[^a-zA-Z0-9._-]/g,
-        "-"
-      );
+      if (file.size > MAX_FILE_SIZE) {
+        throw new Error("حداکثر حجم تصویر ۱۵ مگابایت است.");
+      }
+
+      // ======================================
+      // CREATE SAFE PATHNAME
+      // ======================================
+
+      const safeName = file.name
+        .normalize("NFKD")
+        .replace(/[^a-zA-Z0-9._-]/g, "-")
+        .replace(/-+/g, "-");
 
       const pathname =
-        `products/${type}/${id}/${Date.now()}-${safeName}`;
+        `products/${type}/${id}/${Date.now()}-${safeName || "image"}`;
 
-      // STEP 1: GET PRESIGNED URL
-      console.log("[IMAGE] 2. Requesting upload URL");
-
-      const authResponse = await fetch(
-        "/api/blob/upload",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            pathname,
-            contentType: file.type,
-            size: file.size,
-          }),
-        }
-      );
-
-      const authResult = await authResponse.json();
-
-      console.log("[IMAGE] 3. Authorization response", {
-        status: authResponse.status,
-        success: authResult.success,
-        error: authResult.error,
-      });
-
-      if (!authResponse.ok || !authResult.success) {
-        throw new Error(
-          authResult.error || "دریافت مجوز آپلود ناموفق بود."
-        );
-      }
-
-      const presignedUrl = authResult.presignedUrl;
-      const blobUrl = authResult.blobUrl;
-
-      if (!presignedUrl || !blobUrl) {
-        throw new Error("آدرس آپلود از سرور دریافت نشد.");
-      }
-
-      // STEP 2: UPLOAD TO VERCEL BLOB
-      console.log("[IMAGE] 4. Uploading to Blob", {
+      console.log("[IMAGE] 2. Requesting presigned upload", {
         pathname,
-        size: file.size,
       });
 
-      const uploadResponse = await fetch(
-        presignedUrl,
+      // ======================================
+      // UPLOAD TO VERCEL BLOB
+      // ======================================
+
+      const blob = await uploadPresigned(
+        pathname,
+        file,
         {
-          method: "PUT",
-          headers: {
-            "Content-Type": file.type,
-          },
-          body: file,
+          access: "public",
+          handleUploadUrl: "/api/blob/upload",
+          contentType: file.type,
         }
       );
 
-      console.log("[IMAGE] 5. Blob upload response", {
-        status: uploadResponse.status,
-        ok: uploadResponse.ok,
+      if (!blob?.url) {
+        throw new Error("آدرس تصویر از Vercel Blob دریافت نشد.");
+      }
+
+      console.log("[IMAGE] 3. Blob upload successful", {
+        pathname: blob.pathname,
+        url: blob.url,
+        contentType: blob.contentType,
       });
 
-      if (!uploadResponse.ok) {
-        const responseText =
-          await uploadResponse.text();
+      // ======================================
+      // SAVE IMAGE URL IN DATABASE
+      // ======================================
 
-        console.error("[IMAGE] Blob PUT failed", {
-          status: uploadResponse.status,
-          response: responseText.slice(0, 1500),
-        });
-
-        throw new Error(
-          `آپلود Blob ناموفق بود. کد: ${uploadResponse.status}`
-        );
-      }
-
-      console.log("[IMAGE] 6. Blob upload successful");
-
-      // STEP 3: SAVE URL IN DATABASE
-      console.log("[IMAGE] 7. Saving URL in Neon");
-
-      const updateResponse = await fetch(
-        "/api/product/update",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            id,
-            type,
-            field,
-            imageUrl: blobUrl,
-            oldUrl: src,
-          }),
-        }
-      );
-
-      const updateResult =
-        await updateResponse.json();
-
-      console.log("[IMAGE] 8. Database response", {
-        status: updateResponse.status,
-        success: updateResult.success,
-        error: updateResult.error,
-        savedUrl: updateResult.savedUrl,
-      });
-
-      if (!updateResponse.ok || !updateResult.success) {
-        throw new Error(
-          updateResult.error ||
-          "ذخیره آدرس تصویر در دیتابیس ناموفق بود."
-        );
-      }
-
-      if (
-        updateResult.savedUrl &&
-        updateResult.savedUrl !== blobUrl
-      ) {
-        throw new Error(
-          "آدرس ذخیره‌شده با آدرس تصویر جدید مطابقت ندارد."
-        );
-      }
-
-      console.log("[IMAGE] 9. COMPLETE", {
+      console.log("[IMAGE] 4. Updating database", {
         id,
         type,
         field,
-        blobUrl,
+      });
+
+      const response = await fetch("/api/product/update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id,
+          type,
+          field,
+          imageUrl: blob.url,
+          oldUrl: src,
+        }),
+      });
+
+      const result = await response.json().catch(() => null);
+
+      console.log("[IMAGE] 5. Database response", {
+        status: response.status,
+        success: result?.success,
+        error: result?.error,
+      });
+
+      if (!response.ok || !result?.success) {
+        throw new Error(
+          result?.error ||
+          result?.message ||
+          "تصویر آپلود شد اما ذخیره در دیتابیس ناموفق بود."
+        );
+      }
+
+      // ======================================
+      // SUCCESS
+      // ======================================
+
+      console.log("[IMAGE] 6. COMPLETE", {
+        id,
+        type,
+        field,
+        url: blob.url,
       });
 
       setFile(null);
@@ -219,24 +233,30 @@ export default function EditableSingleImage({
       window.location.reload();
 
     } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "خطای ناشناخته هنگام آپلود عکس";
-
       console.error("[IMAGE] UPLOAD FAILED", {
-        message,
+        message:
+          err instanceof Error
+            ? err.message
+            : String(err),
         id,
         type,
         field,
       });
 
-      setError(message);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "خطای ناشناخته هنگام آپلود تصویر."
+      );
 
     } finally {
       setSaving(false);
     }
   };
+
+  // ==========================================
+  // CANCEL
+  // ==========================================
 
   const cancel = () => {
     if (saving) return;
@@ -246,8 +266,13 @@ export default function EditableSingleImage({
     setEdit(false);
   };
 
+  // ==========================================
+  // RENDER
+  // ==========================================
+
   return (
     <div className="group relative h-full w-full overflow-hidden rounded-xl bg-background">
+
       {src && !imageError ? (
         <Image
           src={src}
@@ -266,8 +291,10 @@ export default function EditableSingleImage({
 
       {isAdmin && (
         <div className="absolute bottom-3 right-3 z-20 max-w-[calc(100%-1.5rem)] opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
+
           {edit ? (
             <div className="flex max-w-full flex-wrap items-center justify-end gap-2 rounded-xl border border-border bg-card/95 p-2 text-card-foreground shadow-xl backdrop-blur">
+
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/avif"
@@ -275,8 +302,7 @@ export default function EditableSingleImage({
                 className="hidden"
                 disabled={saving}
                 onChange={(event) => {
-                  const selected =
-                    event.target.files?.[0];
+                  const selected = event.target.files?.[0];
 
                   setFile(selected || null);
                   setError("");
@@ -316,6 +342,7 @@ export default function EditableSingleImage({
                   {error}
                 </p>
               )}
+
             </div>
           ) : (
             <EditButton
@@ -326,6 +353,7 @@ export default function EditableSingleImage({
               }}
             />
           )}
+
         </div>
       )}
     </div>
