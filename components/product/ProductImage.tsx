@@ -1,17 +1,8 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
-import type { ProductType } from "@/lib/product-types";
 import EditableSingleImage from "../admin/EditableSingleImage";
-
-type ProductType =
-  | "tour"
-  | "train"
-  | "flight"
-  | "bus"
-  | "accommodation"
-  | "visa";
+import type { ProductType } from "@/lib/product-types";
 
 type Props = {
   id: number;
@@ -26,33 +17,7 @@ export default function ProductImage({
   id,
   src,
   type,
-  discountedPrice,
-  discountPercentage,
-  currency,
 }: Props) {
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    const checkAdmin = async () => {
-      try {
-        const res = await fetch("/api/auth/check");
-
-        if (!res.ok) {
-          setIsAdmin(false);
-          return;
-        }
-
-        const data = await res.json();
-
-        setIsAdmin(data.isAdmin === true);
-      } catch {
-        setIsAdmin(false);
-      }
-    };
-
-    checkAdmin();
-  }, []);
-
   return (
     <div className="relative w-full overflow-hidden rounded-xl bg-background">
       <div
