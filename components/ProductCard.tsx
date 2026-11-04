@@ -5,9 +5,6 @@ import PublishButton from "@/components/admin/PublishButton";
 import SpecialButton from "@/components/admin/SpecialButton";
 import type { ProductType } from "@/lib/product-types";
 
-// =========================================================
-// PRODUCT (تغییرات جزئی برای سازگاری بهتر)
-// =========================================================
 type Product = {
   id: number;
   slug: string;
@@ -22,12 +19,9 @@ type Product = {
   isSpecial: boolean;
 };
 
-// =========================================================
-// PROPS (تغییر type به ProductType)
-// =========================================================
 type Props = {
   product: Product;
-  type: ProductType;          // ← دقیقاً همین
+  type: ProductType;
   showAdminActions?: boolean;
   className?: string;
   buttonText?: string;
@@ -36,9 +30,6 @@ type Props = {
   href?: string;
 };
 
-// =========================================================
-// COMPONENT
-// =========================================================
 export default function ProductCard({
   product,
   type,
@@ -63,71 +54,37 @@ export default function ProductCard({
     isSpecial,
   } = product;
 
-  // =======================================================
-  // PRICE
-  // =======================================================
-  const originalPrice = `${price} ${currency || ""}`.trim();
   const finalPrice = `${discountedPrice ?? price} ${currency || ""}`.trim();
-
-  // =======================================================
-  // DISCOUNT
-  // =======================================================
   const hasDiscount = Number(discountPercentage) > 0;
-  const discountText = hasDiscount ? `${discountPercentage}% تخفیف` : "";
 
-  void originalPrice;
-  void discountText;
-
-  // =======================================================
-  // DEFAULT BUTTON TEXT
-  // =======================================================
   const defaultButtonText =
     type === "tour"
       ? "مشاهده تور"
       : type === "train"
-      ? "مشاهده بلیط قطار"
-      : type === "flight"
-      ? "مشاهده بلیط هواپیما"
-      : type === "bus"
-      ? "مشاهده بلیط اتوبوس"
-      : type === "accommodation"
-      ? "مشاهده اقامتگاه"
-      : type === "visa"
-      ? "مشاهده ویزا"
-      : "مشاهده جزئیات";
+        ? "مشاهده بلیط قطار"
+        : type === "flight"
+          ? "مشاهده بلیط هواپیما"
+          : type === "bus"
+            ? "مشاهده بلیط اتوبوس"
+            : type === "accommodation"
+              ? "مشاهده اقامتگاه"
+              : type === "visa"
+                ? "مشاهده ویزا"
+                : "مشاهده جزئیات";
 
-  // =======================================================
-  // LINK
-  // =======================================================
   const href = customHref || `/products/${type}/${slug}`;
 
-  // =======================================================
-  // RENDER
-  // =======================================================
   return (
     <div
       className={`
-        group
-        relative
-        flex
-        h-full
-        flex-col
-        overflow-hidden
-        rounded-2xl
-        border
-        border-border
-        bg-card
-        text-card-foreground
-        shadow-sm
-        transition-all
-        duration-300
-        hover:border-primary/40
-        hover:shadow-lg
-        hover:shadow-primary/5
+        group relative flex h-full min-w-0 flex-col overflow-hidden
+        rounded-2xl border border-border bg-card text-card-foreground
+        shadow-sm transition-all duration-300
+        hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5
         ${className}
       `}
     >
-      {/* IMAGE بخش (همان قبلی - بدون تغییر) */}
+      {/* IMAGE */}
       <div className="relative w-full overflow-hidden bg-background">
         {image ? (
           <>
@@ -145,7 +102,7 @@ export default function ProductCard({
                 src={image}
                 alt={name}
                 fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                sizes="(max-width: 768px) 50vw, (max-width: 1024px) 50vw, 33vw"
                 className="object-contain transition-transform duration-300 group-hover:scale-[1.02]"
               />
             </div>
@@ -157,7 +114,7 @@ export default function ProductCard({
         )}
       </div>
 
-      {/* ADMIN ACTIONS (همان قبلی) */}
+      {/* ADMIN ACTIONS */}
       {showAdminActions && (
         <div className="absolute left-3 top-3 z-20 flex flex-col gap-2">
           <SpecialButton id={id} type={type} isSpecial={isSpecial} />
@@ -167,33 +124,38 @@ export default function ProductCard({
       )}
 
       {/* CONTENT */}
-      <div className="flex flex-1 flex-col p-3 sm:p-4 md:p-6">
+      <div className="flex min-w-0 flex-1 flex-col p-3 sm:p-4 md:p-6">
         {/* NAME */}
-    
-<div className="mb-2 min-w-0">
-  <h3 className="line-clamp-2 break-words text-base font-bold leading-7 text-card-foreground sm:text-lg">
-    {name}
-  </h3>
-</div>
-
-
-        {/* DESCRIPTION */}
-        <div className="mb-1 flex h-[48px] items-start">
-          {showDescription && shortDescription ? (
-            <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">
-              {shortDescription}
-            </p>
-          ) : null}
+        <div className="mb-2 min-w-0">
+          <h3 className="line-clamp-2 break-words text-[15px] font-bold leading-7 text-card-foreground sm:text-lg">
+            {name}
+          </h3>
         </div>
 
-        {/* PRICE */}
-        <div className="mb-6 h-[58px]">
-          <div className="flex h-[34px] items-center">
-            <p className="text-lg font-bold text-primary">
-              شروع قیمت از{" "}
-              <span className="text-2xl">{finalPrice}</span>
-            </p>
-          </div>
+        {/* DESCRIPTION
+            Important: no fixed-height wrapper here. The old h-[48px]
+            wrapper was shorter than 3 lines of leading-6 text (72px),
+            so the description visually overflowed into the price section.
+        */}
+        {showDescription && shortDescription ? (
+          <p className="mt-1 min-w-0 break-words text-xs leading-6 text-muted-foreground [overflow-wrap:anywhere] line-clamp-3 sm:text-sm">
+            {shortDescription}
+          </p>
+        ) : null}
+
+        {/* PRICE
+            Natural height prevents wrapped prices and discounts from
+            colliding with the description or the button on narrow screens.
+        */}
+        <div className="mt-4 min-w-0 border-t border-border/60 pt-3">
+          <p className="text-xs font-medium leading-5 text-muted-foreground sm:text-sm">
+            شروع قیمت از
+          </p>
+
+          <p className="mt-1 block min-w-0 break-words text-xl font-bold leading-tight text-primary sm:text-2xl [overflow-wrap:anywhere]">
+            {finalPrice}
+          </p>
+
           {showDiscount && hasDiscount && (
             <div className="mt-1">
               <span className="text-xs font-semibold text-green-600">
@@ -204,12 +166,14 @@ export default function ProductCard({
         </div>
 
         {/* BUTTON */}
-        <div className="mt-auto">
+        <div className="mt-auto pt-4">
           <Link
             href={href}
-            className="block w-full rounded-xl border border-primary/40 bg-secondary px-4 py-3 text-center font-bold text-primary transition-all duration-200 hover:bg-primary hover:text-primary-foreground"
+            className="flex min-h-[52px] w-full items-center justify-center rounded-xl border border-primary/40 bg-secondary px-2 py-3 text-center text-sm font-bold leading-6 text-primary transition-all duration-200 hover:bg-primary hover:text-primary-foreground sm:px-4 sm:text-base"
           >
-            {buttonText || defaultButtonText}
+            <span className="break-words [overflow-wrap:anywhere]">
+              {buttonText || defaultButtonText}
+            </span>
           </Link>
         </div>
       </div>
