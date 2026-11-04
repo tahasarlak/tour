@@ -1,3 +1,4 @@
+
 "use client";
 
 import ProductImage from "./ProductImage";
@@ -5,6 +6,8 @@ import ProductRegistration from "./ProductRegistration";
 import ProductBasicInfo from "./ProductBasicInfo";
 import BackLink from "../Button/BackLinkButton";
 import type { ProductType } from "@/lib/product-types";
+
+const FALLBACK_IMAGE = "/images/logo.png";
 
 export type ProductPageProduct = {
   id: number;
@@ -22,7 +25,11 @@ export type ProductPageProduct = {
   details?: Record<string, unknown>;
 };
 
-type Props = { type: ProductType; product: ProductPageProduct; isAdmin: boolean };
+type Props = {
+  type: ProductType;
+  product: ProductPageProduct;
+  isAdmin: boolean;
+};
 
 const typeLabels: Record<ProductType, string> = {
   tour: "تور",
@@ -33,36 +40,75 @@ const typeLabels: Record<ProductType, string> = {
   visa: "ویزای توریستی",
 };
 
-export default function ProductPageContent({ type, product, isAdmin }: Props) {
-  const hasImage = Boolean(product.image?.trim());
-  const hasRegistration = Boolean(product.name.trim()) || product.price !== null || product.discountedPrice !== null;
-  const showLeftColumn = isAdmin || hasImage || hasRegistration;
+export default function ProductPageContent({
+  type,
+  product,
+  isAdmin,
+}: Props) {
+  // عکس پیش‌فرض برای محصولات بدون تصویر
+  const productImage =
+    product.image?.trim() || FALLBACK_IMAGE;
+
+  const hasRegistration =
+    Boolean(product.name?.trim()) ||
+    product.price !== null ||
+    product.discountedPrice !== null;
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <BackLink href={`/products/${type}`} label={`بازگشت به ${typeLabels[type]}`} />
+
+      <BackLink
+        href={`/products/${type}`}
+        label={`بازگشت به ${typeLabels[type]}`}
+      />
 
       <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-12">
+
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-10 xl:gap-14">
-          {showLeftColumn && (
-            <section className="min-w-0 space-y-5 lg:sticky lg:top-6 lg:self-start">
-              {(isAdmin || hasImage) && (
-                <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow)]">
-                  <div className="mx-auto w-full max-w-[520px] p-3 sm:p-4 lg:p-5">
-                    <ProductImage id={product.id} src={product.image || ""} type={type} discountedPrice={product.discountedPrice} discountPercentage={product.discountPercentage} currency={product.currency} />
-                  </div>
-                </div>
-              )}
 
-              {hasRegistration && (
-                <div className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow)] sm:p-5">
-                  <ProductRegistration name={product.name} price={product.discountedPrice ?? product.price} currency={product.currency} type={type} />
-                </div>
-              )}
-            </section>
-          )}
+          {/* ستون تصویر و ثبت سفارش */}
+          <section className="min-w-0 space-y-5 lg:sticky lg:top-6 lg:self-start">
 
+            {/* تصویر محصول همیشه نمایش داده می‌شود */}
+            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow)]">
+
+              <div className="mx-auto w-full max-w-[520px] p-3 sm:p-4 lg:p-5">
+
+                <ProductImage
+                  id={product.id}
+                  src={productImage}
+                  type={type}
+                  discountedPrice={product.discountedPrice}
+                  discountPercentage={product.discountPercentage}
+                  currency={product.currency}
+                />
+
+              </div>
+
+            </div>
+
+            {/* اطلاعات ثبت سفارش فقط در صورت وجود اطلاعات */}
+            {hasRegistration && (
+              <div className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow)] sm:p-5">
+
+                <ProductRegistration
+                  name={product.name}
+                  price={
+                    product.discountedPrice ??
+                    product.price
+                  }
+                  currency={product.currency}
+                  type={type}
+                />
+
+              </div>
+            )}
+
+          </section>
+
+          {/* ستون اطلاعات محصول */}
           <section className="min-w-0">
+
             <ProductBasicInfo
               id={product.id}
               name={product.name}
@@ -79,9 +125,13 @@ export default function ProductPageContent({ type, product, isAdmin }: Props) {
               isSpecial={product.isSpecial === true}
               isPublished={product.isPublished === true}
             />
+
           </section>
+
         </div>
+
       </div>
+
     </main>
   );
 }
