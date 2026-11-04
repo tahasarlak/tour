@@ -1,0 +1,156 @@
+
+name: Apply Safarkhosh ZIP Patch
+
+on:
+  workflow_dispatch:
+    inputs:
+      patch_zip:
+        description: "ZIP file path"
+        required: true
+        default: "safarkhosh-patch.zip"
+        type: string
+
+      remove_zip:
+        description: "Delete ZIP after successful patch"
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  apply-patch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout selected branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Extract and apply patch
+        env:
+          PATCH_ZIP: ${{ inputs.patch_zip }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import zipfile
+          import tempfile
+          import shutil
+          from pathlib import Path, PurePosixPath
+
+          repo = Path.cwd().resolve()
+          archive = (repo / os.environ["PATCH_ZIP"]).resolve()
+
+          if not archive.is_relative_to(repo):
+              raise SystemExit("Invalid ZIP path")
+
+          if not archive.is_file():
+              raise SystemExit("ZIP file not found")
+
+          temp = Path(tempfile.mkdtemp())
+
+          try:
+              with zipfile.ZipFile(archive) as z:
+                  for item in z.infolist():
+                      path = PurePosixPath(item.filename)
+
+                      if path.is_absolute() or ".." in path.parts:
+                          raise SystemExit("Unsafe ZIP path")
+
+                      mode = item.external_attr >> 16
+                      if mode & 0o170000 == 0o120000:
+                          raise SystemExit("Symlinks not allowed")
+
+                  z.extractall(temp)
+
+              folders = [
+                  p for p in temp.rglob("patch")
+                  if p.is_dir()
+              ]
+
+              if len(folders) != 1:
+                  raise SystemExit(
+                      "Expected exactly one patch folder"
+                  )
+
+              source = folders[0]
+
+              files = [
+                  p for p in source.rglob("*")
+                  if p.is_file()
+              ]
+
+              if not files:
+                  raise SystemExit("Patch is empty")
+
+              protected = {
+                  ".git",
+                  ".env",
+                  "node_modules",
+                  ".next",
+                  ".github"
+              }
+
+              for src in files:
+                  relative = src.relative_to(source)
+
+                  if any(
+                      part in protected
+                      for part in relative.parts
+                  ):
+                      raise SystemExit(
+                          f"Protected path: {relative}"
+                      )
+
+                  destination = (
+                      repo / relative
+                  ).resolve()
+
+                  if not destination.is_relative_to(repo):
+                      raise SystemExit(
+                          "Invalid destination"
+                      )
+
+                  destination.parent.mkdir(
+                      parents=True,
+                      exist_ok=True
+                  )
+
+                  shutil.copy2(
+                      src,
+                      destination
+                  )
+
+                  print("UPDATED:", relative)
+
+              print("PATCH APPLIED SUCCESSFULLY")
+
+          finally:
+              shutil.rmtree(temp)
+
+      - name: Remove ZIP
+        if: ${{ inputs.remove_zip }}
+        env:
+          PATCH_ZIP: ${{ inputs.patch_zip }}
+        run: rm -f -- "$PATCH_ZIP"
+
+      - name: Validate changes
+        run: git diff --check
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "No changes detected"
+            exit 0
+          fi
+
+          git commit -m "Apply Safarkhosh product patch"
+
+          git push origin "HEAD:${GITHUB_REF_NAME}"
