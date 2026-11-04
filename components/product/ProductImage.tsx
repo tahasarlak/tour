@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
+import type { ProductType } from "@/lib/product-types";
 import EditableSingleImage from "../admin/EditableSingleImage";
 
 type ProductType =
