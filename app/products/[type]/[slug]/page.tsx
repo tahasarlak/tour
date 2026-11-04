@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
 
-import ProductPageContent from "@/components/product/ProductPageContent";
+import ProductPageContent, { type ProductPageProduct } from "@/components/product/ProductPageContent";
 
 import {
   PRODUCT_TYPES,
@@ -309,37 +309,48 @@ export default async function ProductPage({
   }
 
   // ========================================
-  // NORMALIZE PRICE
+  // NORMALIZE DATA FOR CLIENT
   // ========================================
 
-  
-const normalizedProduct = {
-  ...product,
-  name: product.name ?? "",
+  const rawProduct = product as unknown as Record<string, unknown>;
+  const adminDetails = { ...rawProduct };
+  const publicDetails = { ...rawProduct };
 
-  price: Number(product.price),
+  // These fields are used only by administrators. The public page receives
+  // only the image itself (needed to render it), never image-address controls,
+  // publication state, or the special-product flag.
+  for (const key of ["id", "isPublished", "isSpecial", "thumbImage", "gallery", "image", "slug", "createdAt", "updatedAt"]) {
+    delete publicDetails[key];
+  }
+  for (const [key, value] of Object.entries(publicDetails)) {
+    if (value === null || value === undefined || (typeof value === "string" && value.trim() === "") || (Array.isArray(value) && value.length === 0)) {
+      delete publicDetails[key];
+    }
+  }
 
-
-    discountedPrice:
-      product.discountedPrice !== null
-        ? Number(product.discountedPrice)
-        : null,
-
-    discountPercentage:
-      product.discountPercentage ?? 0,
-
-    capacity:
-      "capacity" in product &&
-      product.capacity !== null
-        ? Number(product.capacity)
-        : null,
-
-    remainingCapacity:
-      "remainingCapacity" in product &&
-      product.remainingCapacity !== null
-        ? Number(product.remainingCapacity)
-        : null,
+  const normalizedProduct = {
+    ...product,
+    name: product.name ?? "",
+    price: product.price === null ? null : Number(product.price),
+    discountedPrice: product.discountedPrice === null ? null : Number(product.discountedPrice),
+    discountPercentage: product.discountPercentage ?? null,
+    capacity: "capacity" in product && product.capacity !== null ? Number(product.capacity) : null,
+    remainingCapacity: "remainingCapacity" in product && product.remainingCapacity !== null ? Number(product.remainingCapacity) : null,
+    isSpecial: isAdmin ? product.isSpecial : undefined,
+    isPublished: isAdmin ? product.isPublished : undefined,
+    details: isAdmin ? adminDetails : publicDetails,
   };
+
+  if (!isAdmin) {
+    // Remove administrative metadata from the props sent to the visitor.
+    delete (normalizedProduct as unknown as Record<string, unknown>).isSpecial;
+    delete (normalizedProduct as unknown as Record<string, unknown>).isPublished;
+    delete (normalizedProduct as unknown as Record<string, unknown>).thumbImage;
+    delete (normalizedProduct as unknown as Record<string, unknown>).gallery;
+    delete (normalizedProduct as unknown as Record<string, unknown>).slug;
+    delete (normalizedProduct as unknown as Record<string, unknown>).createdAt;
+    delete (normalizedProduct as unknown as Record<string, unknown>).updatedAt;
+  }
 
   // ========================================
   // RENDER
@@ -348,7 +359,7 @@ const normalizedProduct = {
   return (
     <ProductPageContent
       type={productType}
-      product={normalizedProduct}
+      product={normalizedProduct as ProductPageProduct}
       isAdmin={isAdmin}
     />
   );

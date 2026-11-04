@@ -47,23 +47,21 @@ const featuredTours = await prisma.tour.findMany({
 
       image: tour.image,
 
-      price: Number(tour.price),
+      price: tour.price === null ? null : Number(tour.price),
 
       currency: tour.currency,
 
       discountPercentage:
-        tour.discountPercentage,
+        tour.discountPercentage ?? null,
 
       discountedPrice:
         tour.discountedPrice !== null
           ? Number(tour.discountedPrice)
           : null,
 
-      isPublished:
-        tour.isPublished,
+      isPublished: false,
 
-      isSpecial:
-        tour.isSpecial,
+      isSpecial: false,
     }));
 
   return (

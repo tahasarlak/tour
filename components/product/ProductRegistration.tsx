@@ -16,12 +16,17 @@ export default function ProductRegistration({
   price,
   currency,
 }: Props) {
+  const productName = name.trim();
+  const priceLine = price !== null && price !== undefined && price !== ""
+    ? `💰 قیمت: ${price} ${currency ?? ""}`
+    : "";
   const message = `سلام وقت بخیر 🌹
 
-برای دریافت اطلاعات تکمیلی و شرایط ثبت سفارش درباره آگهی زیر پیام می‌دهم:
-
-📌 نام آگهی: ${name}
-💰 قیمت: ${price ?? "—"} ${currency ?? "—"}
+برای دریافت اطلاعات تکمیلی و شرایط ثبت سفارش پیام می‌دهم:
+${productName ? `
+📌 نام محصول: ${productName}` : ""}
+${priceLine ? `
+${priceLine}` : ""}
 
 لطفاً در صورت امکان اطلاعات کامل، شرایط رزرو و نحوه ثبت سفارش را ارسال بفرمایید.
 ممنونم 🙏`;
@@ -38,7 +43,7 @@ export default function ProductRegistration({
     <div className="w-full text-foreground">
       <div className="mb-4">
         <h3 className="text-base font-bold text-foreground sm:text-lg">
-          اطلاعات تکمیلی {name}
+          اطلاعات تکمیلی {productName || "محصول"}
         </h3>
 
         <p className="mt-1 text-xs leading-6 text-muted-foreground sm:text-sm">

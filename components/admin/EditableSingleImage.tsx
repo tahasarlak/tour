@@ -255,6 +255,36 @@ export default function EditableSingleImage({
   };
 
   // ==========================================
+  // CLEAR IMAGE (OPTIONAL FIELD)
+  // ==========================================
+
+  const clearImage = async () => {
+    if (!isAdmin || !src || saving) return;
+
+    setError("");
+    setSaving(true);
+
+    try {
+      const response = await fetch("/api/product/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, type, field, imageUrl: "" }),
+      });
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || "حذف تصویر انجام نشد.");
+      }
+
+      window.location.reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "حذف تصویر انجام نشد.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ==========================================
   // CANCEL
   // ==========================================
 
@@ -324,6 +354,17 @@ export default function EditableSingleImage({
               >
                 {saving ? "در حال آپلود..." : "ذخیره"}
               </button>
+
+              {src && (
+                <button
+                  type="button"
+                  onClick={clearImage}
+                  disabled={saving}
+                  className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-600 disabled:opacity-50"
+                >
+                  حذف تصویر
+                </button>
+              )}
 
               <button
                 type="button"

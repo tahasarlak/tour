@@ -10,16 +10,16 @@ datasource db {
 model Tour {
   id                 Int       @id @default(autoincrement())
   slug               String    @unique
-  name               String
-  price              Decimal   @db.Decimal(12, 2)
-  currency           String    @default("تومان")
+  name               String?
+  price              Decimal?   @db.Decimal(12, 2)
+  currency           String?    @default("تومان")
   discountedPrice    Decimal?  @db.Decimal(12, 2)
-  discountPercentage Int       @default(0)
+  discountPercentage Int?       @default(0)
   shortDescription   String?
   description        String?
   image              String?
   thumbImage         String?
-  destination        String
+  destination        String?
   country            String?
   city               String?
   duration           String?
@@ -57,10 +57,10 @@ model TrainTicket {
   id                 Int       @id @default(autoincrement())
   slug               String    @unique
   name               String?
-  price              Decimal   @db.Decimal(12, 2)
-  currency           String    @default("تومان")
+  price              Decimal?   @db.Decimal(12, 2)
+  currency           String?    @default("تومان")
   discountedPrice    Decimal?  @db.Decimal(12, 2)
-  discountPercentage Int       @default(0)
+  discountPercentage Int?       @default(0)
   shortDescription   String?
   description        String?
   image              String?
@@ -110,10 +110,10 @@ model FlightTicket {
   id                     Int       @id @default(autoincrement())
   slug                   String    @unique
   name                   String?
-  price                  Decimal   @db.Decimal(12, 2)
-  currency               String    @default("تومان")
+  price                  Decimal?   @db.Decimal(12, 2)
+  currency               String?    @default("تومان")
   discountedPrice        Decimal?  @db.Decimal(12, 2)
-  discountPercentage     Int       @default(0)
+  discountPercentage     Int?       @default(0)
   shortDescription       String?
   description            String?
   image                  String?
@@ -138,8 +138,8 @@ model FlightTicket {
   cabinClass             String?
   baggage                String?
   handBaggage            String?
-  stops                  Int       @default(0)
-  refundable             Boolean   @default(false)
+  stops                  Int? @default(0)
+  refundable             Boolean?
   refundPolicy           String?
   cancellationPolicy     String?
   facilities             String[]  @default([])
@@ -164,10 +164,10 @@ model BusTicket {
   id                  Int       @id @default(autoincrement())
   slug                String    @unique
   name                String?
-  price               Decimal   @db.Decimal(12, 2)
-  currency            String    @default("تومان")
+  price               Decimal?   @db.Decimal(12, 2)
+  currency            String?    @default("تومان")
   discountedPrice     Decimal?  @db.Decimal(12, 2)
-  discountPercentage  Int       @default(0)
+  discountPercentage  Int?       @default(0)
   shortDescription    String?
   description         String?
   image               String?
@@ -216,15 +216,15 @@ model BusTicket {
 model Accommodation {
   id                 Int       @id @default(autoincrement())
   slug               String    @unique
-  name               String
-  price              Decimal   @db.Decimal(12, 2)
-  currency           String    @default("تومان")
+  name               String?
+  price              Decimal?   @db.Decimal(12, 2)
+  currency           String?    @default("تومان")
   discountedPrice    Decimal?  @db.Decimal(12, 2)
-  discountPercentage Int       @default(0)
+  discountPercentage Int?       @default(0)
   shortDescription   String?
   description        String?
   country            String?
-  city               String
+  city               String?
   address            String?
   latitude           Float?
   longitude          Float?
@@ -263,17 +263,17 @@ model Accommodation {
 model TouristVisa {
   id                   Int       @id @default(autoincrement())
   slug                 String    @unique
-  name                 String
-  price                Decimal   @db.Decimal(12, 2)
-  currency             String    @default("تومان")
+  name                 String?
+  price                Decimal?   @db.Decimal(12, 2)
+  currency             String?    @default("تومان")
   discountedPrice      Decimal?  @db.Decimal(12, 2)
-  discountPercentage   Int       @default(0)
+  discountPercentage   Int?       @default(0)
   shortDescription     String?
   description          String?
   image                String?
   thumbImage           String?
   gallery              String[]  @default([])
-  country              String
+  country              String?
   countryCode          String?
   destination          String?
   visaType             String?
@@ -281,15 +281,15 @@ model TouristVisa {
   validityPeriod       String?
   stayDuration         String?
   processingTime       String?
-  urgentProcessing     Boolean   @default(false)
+  urgentProcessing     Boolean?
   urgentProcessingTime String?
   requirements         String[]  @default([])
   requiredDocuments    String[]  @default([])
   additionalDocuments  String[]  @default([])
   included             String[]  @default([])
   excluded             String[]  @default([])
-  interviewRequired    Boolean   @default(false)
-  biometricsRequired   Boolean   @default(false)
+  interviewRequired    Boolean?
+  biometricsRequired   Boolean?
   cancellationPolicy   String?
   notes                String?
   isSpecial            Boolean   @default(false)

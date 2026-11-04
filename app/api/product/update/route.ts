@@ -1,953 +1,199 @@
-
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { put } from "@vercel/blob";
 import { getAdminSession } from "@/lib/auth";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-// ======================================================
-// TYPES
-// ======================================================
-
-type ProductType =
-  | "tour"
-  | "train"
-  | "flight"
-  | "bus"
-  | "accommodation"
-  | "visa";
-
-type Body = Record<string, unknown>;
-
-// ======================================================
-// HELPERS
-// ======================================================
-
-function isProductType(value: unknown): value is ProductType {
-  return (
-    value === "tour" ||
-    value === "train" ||
-    value === "flight" ||
-    value === "bus" ||
-    value === "accommodation" ||
-    value === "visa"
-  );
-}
-
-function parseString(value: unknown): string | null {
-  if (value === undefined || value === null) return null;
-  const result = String(value).trim();
-  return result === "" ? null : result;
-}
-
-function parseBoolean(value: unknown): boolean {
-  if (typeof value === "boolean") return value;
-  if (typeof value === "number") return value === 1;
-
-  if (typeof value === "string") {
-    const normalized = value.trim().toLowerCase();
-    return ["true", "1", "yes", "on"].includes(normalized);
-  }
-
-  return Boolean(value);
-}
-
-function parseInteger(value: unknown): number | null {
-  if (value === undefined || value === null || value === "") {
-    return null;
-  }
-
-  const number = Number(value);
-
-  if (!Number.isFinite(number) || !Number.isInteger(number)) {
-    return null;
-  }
-
-  return number;
-}
-
-function parseDecimal(value: unknown): string | null {
-  if (value === undefined || value === null || value === "") {
-    return null;
-  }
-
-  const normalized = String(value).replace(/,/g, "").trim();
-  const number = Number(normalized);
-
-  if (!Number.isFinite(number) || number < 0) {
-    return null;
-  }
-
-  return normalized;
-}
-
-function parseDate(value: unknown): Date | null {
-  if (value === undefined || value === null || value === "") {
-    return null;
-  }
-
-  const date = new Date(String(value));
-
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return date;
-}
-
-function parseArray(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value.map(String).map((item) => item.trim()).filter(Boolean);
-  }
-
-  if (typeof value !== "string") return [];
-
-  const text = value.trim();
-  if (!text) return [];
-
-  try {
-    const parsed = JSON.parse(text);
-
-    if (Array.isArray(parsed)) {
-      return parsed.map(String).map((item) => item.trim()).filter(Boolean);
-    }
-  } catch {
-    // Continue with newline parsing.
-  }
-
-  return text.split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
-}
-
-function parseJson(value: unknown): unknown {
-  if (value === undefined || value === null || value === "") {
-    return [];
-  }
-
-  if (typeof value !== "string") return value;
-
-  try {
-    return JSON.parse(value);
-  } catch {
-    return [];
-  }
-}
-
-// ======================================================
-// FIELD DEFINITIONS
-// ======================================================
-
-const commonStringFields = new Set([
-  "name",
-  "currency",
-  "shortDescription",
-  "description",
-  "image",
-  "thumbImage",
-  "destination",
-  "country",
-  "city",
-  "duration",
-  "origin",
-  "originCity",
-  "destinationCity",
-  "originStation",
-  "destinationStation",
-  "originCode",
-  "destinationCode",
-  "trainCompany",
-  "trainName",
-  "trainNumber",
-  "trainType",
-  "departureTime",
-  "arrivalTime",
-  "carriageType",
-  "seatType",
-  "baggage",
-  "refundPolicy",
-  "cancellationPolicy",
-  "originAirport",
-  "destinationAirport",
-  "originAirportCode",
-  "destinationAirportCode",
-  "airline",
-  "airlineCode",
-  "flightNumber",
-  "cabinClass",
-  "handBaggage",
-  "originTerminal",
-  "destinationTerminal",
-  "busCompany",
-  "busName",
-  "busNumber",
-  "busType",
-  "seatClass",
-  "address",
-  "mapUrl",
-  "accommodationType",
-  "roomType",
-  "checkInTime",
-  "checkOutTime",
-  "mealPlan",
-  "houseRules",
-  "countryCode",
-  "visaType",
-  "entryType",
-  "validityPeriod",
-  "stayDuration",
-  "processingTime",
-  "urgentProcessingTime",
-  "notes",
-  "accommodation",
-  "transportation",
-  "meals",
-  "guide",
-  "meetingPoint",
-]);
-
-const priceFields = new Set([
-  "price",
-  "discountedPrice",
-]);
-
-const integerFields = new Set([
-  "discountPercentage",
-  "capacity",
-  "remainingCapacity",
-  "starRating",
-  "rooms",
-  "minimumNights",
-  "stops",
-]);
-
-const booleanFields = new Set([
-  "isSpecial",
-  "isPublished",
-  "refundable",
-  "urgentProcessing",
-  "interviewRequired",
-  "biometricsRequired",
-]);
-
-const dateFields = new Set([
-  "departureDate",
-  "returnDate",
-  "arrivalDate",
-]);
-
-const arrayFields = new Set([
-  "gallery",
-  "highlights",
-  "included",
-  "excluded",
-  "requirements",
-  "facilities",
-  "amenities",
-  "services",
-  "requiredDocuments",
-  "additionalDocuments",
-]);
-
-const jsonFields = new Set([
-  "itinerary",
-]);
-
-// ======================================================
-// VALID FIELDS BY PRODUCT TYPE
-// ======================================================
+type ProductType = "tour" | "train" | "flight" | "bus" | "accommodation" | "visa";
+type Body = { type?: unknown; id?: unknown; field?: unknown; value?: unknown; imageUrl?: unknown };
 
 const fieldsByType: Record<ProductType, Set<string>> = {
-  tour: new Set([
-    "name", "price", "currency", "discountedPrice",
-    "discountPercentage", "shortDescription", "description",
-    "image", "thumbImage", "destination", "country", "city",
-    "duration", "departureDate", "returnDate", "capacity",
-    "remainingCapacity", "accommodation", "transportation",
-    "meals", "guide", "meetingPoint", "mapUrl", "highlights",
-    "included", "excluded", "requirements", "itinerary",
-    "gallery", "isSpecial", "isPublished",
-  ]),
-
-  train: new Set([
-    "name", "price", "currency", "discountedPrice",
-    "discountPercentage", "shortDescription", "description",
-    "image", "thumbImage", "gallery", "origin", "destination",
-    "originCity", "destinationCity", "originStation",
-    "destinationStation", "originCode", "destinationCode",
-    "trainCompany", "trainName", "trainNumber", "trainType",
-    "departureDate", "arrivalDate", "departureTime",
-    "arrivalTime", "duration", "carriageType", "seatType",
-    "capacity", "remainingCapacity", "baggage", "refundPolicy",
-    "cancellationPolicy", "facilities", "requirements",
-    "isSpecial", "isPublished",
-  ]),
-
-  flight: new Set([
-    "name", "price", "currency", "discountedPrice",
-    "discountPercentage", "shortDescription", "description",
-    "image", "thumbImage", "gallery", "origin", "destination",
-    "originCity", "destinationCity", "originAirport",
-    "destinationAirport", "originAirportCode",
-    "destinationAirportCode", "airline", "airlineCode",
-    "flightNumber", "departureDate", "arrivalDate",
-    "departureTime", "arrivalTime", "duration", "cabinClass",
-    "baggage", "handBaggage", "stops", "refundable",
-    "refundPolicy", "cancellationPolicy", "facilities",
-    "requirements", "capacity", "remainingCapacity",
-    "isSpecial", "isPublished",
-  ]),
-
-  bus: new Set([
-    "name", "price", "currency", "discountedPrice",
-    "discountPercentage", "shortDescription", "description",
-    "image", "thumbImage", "gallery", "origin", "destination",
-    "originCity", "destinationCity", "originTerminal",
-    "destinationTerminal", "originCode", "destinationCode",
-    "busCompany", "busName", "busNumber", "busType",
-    "departureDate", "arrivalDate", "departureTime",
-    "arrivalTime", "duration", "seatType", "seatClass",
-    "capacity", "remainingCapacity", "baggage", "refundPolicy",
-    "cancellationPolicy", "facilities", "requirements",
-    "isSpecial", "isPublished",
-  ]),
-
-  accommodation: new Set([
-    "name", "price", "currency", "discountedPrice",
-    "discountPercentage", "shortDescription", "description",
-    "country", "city", "address", "latitude", "longitude",
-    "mapUrl", "image", "thumbImage", "gallery",
-    "accommodationType", "starRating", "roomType", "capacity",
-    "remainingCapacity", "rooms", "checkInTime", "checkOutTime",
-    "minimumNights", "mealPlan", "amenities", "services",
-    "cancellationPolicy", "houseRules", "requirements",
-    "isSpecial", "isPublished",
-  ]),
-
-  visa: new Set([
-    "name", "price", "currency", "discountedPrice",
-    "discountPercentage", "shortDescription", "description",
-    "image", "thumbImage", "gallery", "country", "countryCode",
-    "destination", "visaType", "entryType", "validityPeriod",
-    "stayDuration", "processingTime", "urgentProcessing",
-    "urgentProcessingTime", "requirements", "requiredDocuments",
-    "additionalDocuments", "included", "excluded",
-    "interviewRequired", "biometricsRequired",
-    "cancellationPolicy", "notes", "isSpecial", "isPublished",
-  ]),
+  tour: new Set(["name","price","currency","discountedPrice","discountPercentage","shortDescription","description","image","thumbImage","destination","country","city","duration","departureDate","returnDate","capacity","remainingCapacity","accommodation","transportation","meals","guide","meetingPoint","mapUrl","highlights","included","excluded","requirements","itinerary","gallery","isSpecial","isPublished"]),
+  train: new Set(["name","price","currency","discountedPrice","discountPercentage","shortDescription","description","image","thumbImage","gallery","origin","destination","originCity","destinationCity","originStation","destinationStation","originCode","destinationCode","trainCompany","trainName","trainNumber","trainType","departureDate","arrivalDate","departureTime","arrivalTime","duration","carriageType","seatType","capacity","remainingCapacity","baggage","refundPolicy","cancellationPolicy","facilities","requirements","isSpecial","isPublished"]),
+  flight: new Set(["name","price","currency","discountedPrice","discountPercentage","shortDescription","description","image","thumbImage","gallery","origin","destination","originCity","destinationCity","originAirport","destinationAirport","originAirportCode","destinationAirportCode","airline","airlineCode","flightNumber","departureDate","arrivalDate","departureTime","arrivalTime","duration","cabinClass","baggage","handBaggage","stops","refundable","refundPolicy","cancellationPolicy","facilities","requirements","capacity","remainingCapacity","isSpecial","isPublished"]),
+  bus: new Set(["name","price","currency","discountedPrice","discountPercentage","shortDescription","description","image","thumbImage","gallery","origin","destination","originCity","destinationCity","originTerminal","destinationTerminal","originCode","destinationCode","busCompany","busName","busNumber","busType","departureDate","arrivalDate","departureTime","arrivalTime","duration","seatType","seatClass","capacity","remainingCapacity","baggage","refundPolicy","cancellationPolicy","facilities","requirements","isSpecial","isPublished"]),
+  accommodation: new Set(["name","price","currency","discountedPrice","discountPercentage","shortDescription","description","country","city","address","latitude","longitude","mapUrl","image","thumbImage","gallery","accommodationType","starRating","roomType","capacity","remainingCapacity","rooms","checkInTime","checkOutTime","minimumNights","mealPlan","amenities","services","cancellationPolicy","houseRules","requirements","isSpecial","isPublished"]),
+  visa: new Set(["name","price","currency","discountedPrice","discountPercentage","shortDescription","description","image","thumbImage","gallery","country","countryCode","destination","visaType","entryType","validityPeriod","stayDuration","processingTime","urgentProcessing","urgentProcessingTime","requirements","requiredDocuments","additionalDocuments","included","excluded","interviewRequired","biometricsRequired","cancellationPolicy","notes","isSpecial","isPublished"]),
 };
 
-// ======================================================
-// FIND PRODUCT
-// ======================================================
+const stringFields = new Set(["name","currency","shortDescription","description","destination","country","city","duration","origin","originCity","destinationCity","originStation","destinationStation","originCode","destinationCode","trainCompany","trainName","trainNumber","trainType","departureTime","arrivalTime","carriageType","seatType","baggage","refundPolicy","cancellationPolicy","originAirport","destinationAirport","originAirportCode","destinationAirportCode","airline","airlineCode","flightNumber","cabinClass","handBaggage","originTerminal","destinationTerminal","busCompany","busName","busNumber","busType","seatClass","address","mapUrl","accommodationType","roomType","checkInTime","checkOutTime","mealPlan","houseRules","countryCode","visaType","entryType","validityPeriod","stayDuration","processingTime","urgentProcessingTime","notes","accommodation","transportation","meals","guide","meetingPoint"]);
+const decimalFields = new Set(["price","discountedPrice"]);
+const integerFields = new Set(["discountPercentage","capacity","remainingCapacity","starRating","rooms","minimumNights","stops"]);
+const floatFields = new Set(["latitude","longitude"]);
+const booleanFields = new Set(["isSpecial","isPublished","refundable","urgentProcessing","interviewRequired","biometricsRequired"]);
+const dateFields = new Set(["departureDate","returnDate","arrivalDate"]);
+const arrayFields = new Set(["gallery","highlights","included","excluded","requirements","facilities","amenities","services","requiredDocuments","additionalDocuments"]);
+const jsonFields = new Set(["itinerary"]);
+const nullableBooleanFields = new Set(["refundable","urgentProcessing","interviewRequired","biometricsRequired"]);
+
+function isProductType(value: unknown): value is ProductType {
+  return value === "tour" || value === "train" || value === "flight" || value === "bus" || value === "accommodation" || value === "visa";
+}
+function isAllowedImageUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.username && !url.password;
+  } catch { return false; }
+}
+function parseString(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const result = String(value).trim();
+  return result || null;
+}
+function parseDecimal(value: unknown): string | null {
+  if (value === null || value === undefined || value === "") return null;
+  const normalized = String(value).replace(/,/g, "").trim();
+  const number = Number(normalized);
+  if (!normalized || !Number.isFinite(number) || number < 0) throw new Error("مقدار عددی معتبر نیست.");
+  return normalized;
+}
+function parseInteger(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const number = Number(value);
+  if (!Number.isFinite(number) || !Number.isInteger(number)) throw new Error("مقدار باید عدد صحیح باشد.");
+  return number;
+}
+function parseFloatValue(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const number = Number(value);
+  if (!Number.isFinite(number)) throw new Error("مختصات معتبر نیست.");
+  return number;
+}
+function parseDate(value: unknown): Date | null {
+  if (value === null || value === undefined || value === "") return null;
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) throw new Error("تاریخ معتبر نیست.");
+  return date;
+}
+function parseBoolean(value: unknown): boolean | null {
+  if (value === null || value === undefined || value === "") return null;
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value === 1;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["true","1","yes","on"].includes(normalized)) return true;
+    if (["false","0","no","off"].includes(normalized)) return false;
+  }
+  throw new Error("مقدار بله/خیر معتبر نیست.");
+}
+function parseArray(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean);
+  if (value === null || value === undefined || value === "") return [];
+  if (typeof value !== "string") throw new Error("ساختار فهرست معتبر نیست.");
+  const text = value.trim();
+  if (!text) return [];
+  try {
+    const parsed: unknown = JSON.parse(text);
+    if (Array.isArray(parsed)) return parsed.map((item) => String(item).trim()).filter(Boolean);
+  } catch { /* plain newline-separated text is also supported */ }
+  return text.split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
+}
+function parseJson(value: unknown): unknown {
+  if (value === null || value === undefined || value === "") return [];
+  if (typeof value !== "string") return value;
+  try { return JSON.parse(value); }
+  catch { throw new Error("ساختار JSON معتبر نیست."); }
+}
 
 async function findProduct(type: ProductType, id: number) {
   switch (type) {
-    case "tour":
-      return prisma.tour.findUnique({ where: { id } });
-
-    case "train":
-      return prisma.trainTicket.findUnique({ where: { id } });
-
-    case "flight":
-      return prisma.flightTicket.findUnique({ where: { id } });
-
-    case "bus":
-      return prisma.busTicket.findUnique({ where: { id } });
-
-    case "accommodation":
-      return prisma.accommodation.findUnique({ where: { id } });
-
-    case "visa":
-      return prisma.touristVisa.findUnique({ where: { id } });
+    case "tour": return prisma.tour.findUnique({ where: { id } });
+    case "train": return prisma.trainTicket.findUnique({ where: { id } });
+    case "flight": return prisma.flightTicket.findUnique({ where: { id } });
+    case "bus": return prisma.busTicket.findUnique({ where: { id } });
+    case "accommodation": return prisma.accommodation.findUnique({ where: { id } });
+    case "visa": return prisma.touristVisa.findUnique({ where: { id } });
   }
 }
-
-// ======================================================
-// UPDATE PRODUCT
-// ======================================================
-
-async function updateProduct(
-  type: ProductType,
-  id: number,
-  field: string,
-  value: unknown
-) {
-  const data = { [field]: value };
-
+async function updateProduct(type: ProductType, id: number, field: string, value: unknown) {
+  const data = { [field]: value } as any;
   switch (type) {
-    case "tour":
-      return prisma.tour.update({ where: { id }, data });
-
-    case "train":
-      return prisma.trainTicket.update({ where: { id }, data });
-
-    case "flight":
-      return prisma.flightTicket.update({ where: { id }, data });
-
-    case "bus":
-      return prisma.busTicket.update({ where: { id }, data });
-
-    case "accommodation":
-      return prisma.accommodation.update({ where: { id }, data });
-
-    case "visa":
-      return prisma.touristVisa.update({ where: { id }, data });
+    case "tour": return prisma.tour.update({ where: { id }, data });
+    case "train": return prisma.trainTicket.update({ where: { id }, data });
+    case "flight": return prisma.flightTicket.update({ where: { id }, data });
+    case "bus": return prisma.busTicket.update({ where: { id }, data });
+    case "accommodation": return prisma.accommodation.update({ where: { id }, data });
+    case "visa": return prisma.touristVisa.update({ where: { id }, data });
   }
 }
 
-// ======================================================
-// IMAGE URL VALIDATION
-// ======================================================
-
-function isAllowedBlobUrl(value: string): boolean {
+export async function POST(request: Request) {
   try {
-    const url = new URL(value);
-
-    return (
-      url.protocol === "https:" &&
-      (
-        url.hostname === "public.blob.vercel-storage.com" ||
-        url.hostname.endsWith(".public.blob.vercel-storage.com")
-      )
-    );
-  } catch {
-    return false;
-  }
-}
-
-// ======================================================
-// POST
-// ======================================================
-
-export async function POST(req: Request) {
-  try {
-    // AUTH
     const session = await getAdminSession();
+    if (!session) return NextResponse.json({ success: false, error: "دسترسی غیرمجاز است." }, { status: 401 });
 
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: "دسترسی غیرمجاز است." },
-        { status: 401 }
-      );
-    }
-
-    // READ BODY
-    const contentType = req.headers.get("content-type") || "";
-    let body: Body = {};
-
-    if (contentType.includes("application/json")) {
-      const text = await req.text();
-
-      if (!text.trim()) {
-        return NextResponse.json(
-          { success: false, error: "اطلاعاتی ارسال نشده است." },
-          { status: 400 }
-        );
+    let body: Body;
+    try {
+      const parsed: unknown = await request.json();
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        return NextResponse.json({ success: false, error: "ساختار درخواست معتبر نیست." }, { status: 400 });
       }
-
-      try {
-        body = JSON.parse(text);
-      } catch {
-        return NextResponse.json(
-          { success: false, error: "JSON نامعتبر است." },
-          { status: 400 }
-        );
-      }
-    } else if (contentType.includes("multipart/form-data")) {
-      const formData = await req.formData();
-
-      formData.forEach((value, key) => {
-        body[key] = value;
-      });
-    } else {
-      return NextResponse.json(
-        { success: false, error: "نوع درخواست نامعتبر است." },
-        { status: 400 }
-      );
+      body = parsed as Body;
+    } catch {
+      return NextResponse.json({ success: false, error: "JSON نامعتبر است." }, { status: 400 });
     }
 
-    // TYPE
-    const type = String(body.type || "").trim();
-
-    if (!isProductType(type)) {
-      return NextResponse.json(
-        { success: false, error: "نوع محصول نامعتبر است." },
-        { status: 400 }
-      );
-    }
-
-    // ID
+    const typeValue = typeof body.type === "string" ? body.type.trim() : "";
+    if (!isProductType(typeValue)) return NextResponse.json({ success: false, error: "نوع محصول نامعتبر است." }, { status: 400 });
+    const type = typeValue;
     const id = Number(body.id);
+    if (!Number.isInteger(id) || id <= 0) return NextResponse.json({ success: false, error: "شناسه محصول نامعتبر است." }, { status: 400 });
+    const field = typeof body.field === "string" ? body.field.trim() : "";
+    if (!field || !fieldsByType[type].has(field)) return NextResponse.json({ success: false, error: "فیلد انتخاب‌شده برای این محصول مجاز نیست." }, { status: 400 });
+    if (["id","slug","createdAt","updatedAt"].includes(field)) return NextResponse.json({ success: false, error: "ویرایش این فیلد مجاز نیست." }, { status: 400 });
 
-    if (!Number.isInteger(id) || id <= 0) {
-      return NextResponse.json(
-        { success: false, error: "شناسه محصول نامعتبر است." },
-        { status: 400 }
-      );
-    }
-
-    // FIELD
-    const field = String(body.field || "").trim();
-
-    if (!field) {
-      return NextResponse.json(
-        { success: false, error: "فیلد برای ویرایش مشخص نشده است." },
-        { status: 400 }
-      );
-    }
-
-    // FIELD SECURITY
-    if (!fieldsByType[type].has(field)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `فیلد "${field}" برای محصول "${type}" مجاز نیست.`,
-        },
-        { status: 400 }
-      );
-    }
-
-    const protectedFields = new Set([
-      "id",
-      "slug",
-      "createdAt",
-      "updatedAt",
-    ]);
-
-    if (protectedFields.has(field)) {
-      return NextResponse.json(
-        { success: false, error: "ویرایش این فیلد مجاز نیست." },
-        { status: 400 }
-      );
-    }
-
-    // FIND PRODUCT
     const product = await findProduct(type, id);
+    if (!product) return NextResponse.json({ success: false, error: "محصول پیدا نشد." }, { status: 404 });
 
-    if (!product) {
-      return NextResponse.json(
-        { success: false, error: "محصول پیدا نشد." },
-        { status: 404 }
-      );
-    }
-
-    // ==================================================
-    // IMAGE
-    // ==================================================
-
+    let value: unknown;
     if (field === "image" || field === "thumbImage") {
-      let imageUrl = "";
-
-      const directUrl =
-        typeof body.imageUrl === "string"
-          ? body.imageUrl.trim()
+      const imageUrl = typeof body.imageUrl === "string"
+        ? body.imageUrl.trim()
+        : typeof body.value === "string"
+          ? body.value.trim()
           : "";
-
-      // DIRECT BLOB URL
-      if (directUrl) {
-        if (!isAllowedBlobUrl(directUrl)) {
-          return NextResponse.json(
-            { success: false, error: "آدرس Blob معتبر نیست." },
-            { status: 400 }
-          );
-        }
-
-        imageUrl = directUrl;
+      if (!imageUrl) {
+        value = null;
       } else {
-        // LEGACY MULTIPART UPLOAD
-        const image = body.image;
-
-        if (!(image instanceof File) || image.size <= 0) {
-          return NextResponse.json(
-            { success: false, error: "فایل تصویر معتبر نیست." },
-            { status: 400 }
-          );
-        }
-
-        const allowedTypes = [
-          "image/jpeg",
-          "image/png",
-          "image/webp",
-          "image/avif",
-        ];
-
-        if (!allowedTypes.includes(image.type)) {
-          return NextResponse.json(
-            { success: false, error: "فرمت تصویر مجاز نیست." },
-            { status: 400 }
-          );
-        }
-
-        if (image.size > 15 * 1024 * 1024) {
-          return NextResponse.json(
-            { success: false, error: "حداکثر حجم تصویر ۱۵ مگابایت است." },
-            { status: 400 }
-          );
-        }
-
-        const folder =
-          field === "thumbImage"
-            ? `${type}/thumbs`
-            : type;
-
-        const safeName = image.name.replace(
-          /[^a-zA-Z0-9._-]/g,
-          "-"
-        );
-
-        const blob = await put(
-          `${folder}/${id}/${Date.now()}-${safeName}`,
-          image,
-          {
-            access: "public",
-            addRandomSuffix: true,
-          }
-        );
-
-        imageUrl = blob.url;
+        if (!isAllowedImageUrl(imageUrl)) return NextResponse.json({ success: false, error: "آدرس تصویر معتبر نیست." }, { status: 400 });
+        value = imageUrl;
       }
-
-      console.log("[IMAGE UPDATE] Saving", {
-        type,
-        id,
-        field,
-        hasImageUrl: Boolean(imageUrl),
-      });
-
-      // SAVE TO DATABASE
-      const updated = await updateProduct(
-        type,
-        id,
-        field,
-        imageUrl
-      );
-
-      // VERIFY DATABASE
-      const verified = await findProduct(type, id);
-
-      const savedValue =
-        verified
-          ? (verified as unknown as Record<string, unknown>)[field]
-          : null;
-
-      const matches = savedValue === imageUrl;
-
-      console.log("[IMAGE UPDATE] Result", {
-        type,
-        id,
-        field,
-        matches,
-        savedValue,
-      });
-
-      if (!matches) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "آدرس عکس در دیتابیس ذخیره نشد.",
-          },
-          { status: 500 }
-        );
+    } else if (arrayFields.has(field)) {
+      value = parseArray(body.value);
+    } else if (jsonFields.has(field)) {
+      value = parseJson(body.value);
+    } else if (booleanFields.has(field)) {
+      value = parseBoolean(body.value);
+      if ((field === "isSpecial" || field === "isPublished") && value === null) value = false;
+      if (!nullableBooleanFields.has(field) && value === null) value = false;
+    } else if (decimalFields.has(field)) {
+      value = parseDecimal(body.value);
+    } else if (integerFields.has(field)) {
+      const parsedInteger = parseInteger(body.value);
+      value = parsedInteger;
+      if (parsedInteger !== null) {
+        if (field === "discountPercentage" && (parsedInteger < 0 || parsedInteger > 100)) throw new Error("درصد تخفیف باید بین ۰ تا ۱۰۰ باشد.");
+        if (["capacity","remainingCapacity","rooms","minimumNights","stops"].includes(field) && parsedInteger < 0) throw new Error("مقدار نمی‌تواند منفی باشد.");
+        if (field === "starRating" && (parsedInteger < 0 || parsedInteger > 5)) throw new Error("تعداد ستاره باید بین ۰ تا ۵ باشد.");
       }
-
-      return NextResponse.json({
-        success: true,
-        type,
-        id,
-        field,
-        savedUrl: savedValue,
-        product: updated,
-        message: "تصویر با موفقیت ذخیره شد.",
-      });
+    } else if (floatFields.has(field)) {
+      value = parseFloatValue(body.value);
+    } else if (dateFields.has(field)) {
+      value = parseDate(body.value);
+    } else if (stringFields.has(field)) {
+      value = parseString(body.value);
+    } else {
+      return NextResponse.json({ success: false, error: "نوع فیلد پشتیبانی نمی‌شود." }, { status: 400 });
     }
 
-    // ==================================================
-    // ARRAY
-    // ==================================================
-
-    if (arrayFields.has(field)) {
-      const value = parseArray(body.value ?? body[field]);
-
-      const updated = await updateProduct(
-        type,
-        id,
-        field,
-        value
-      );
-
-      return NextResponse.json({
-        success: true,
-        type,
-        field,
-        value,
-        product: updated,
-        message: "لیست با موفقیت بروزرسانی شد.",
-      });
-    }
-
-    // ==================================================
-    // JSON
-    // ==================================================
-
-    if (jsonFields.has(field)) {
-      const value = parseJson(body.value ?? body[field]);
-
-      const updated = await updateProduct(
-        type,
-        id,
-        field,
-        value
-      );
-
-      return NextResponse.json({
-        success: true,
-        type,
-        field,
-        value,
-        product: updated,
-        message: "اطلاعات با موفقیت بروزرسانی شد.",
-      });
-    }
-
-    // ==================================================
-    // BOOLEAN
-    // ==================================================
-
-    if (booleanFields.has(field)) {
-      const value = parseBoolean(body.value ?? body[field]);
-
-      const updated = await updateProduct(
-        type,
-        id,
-        field,
-        value
-      );
-
-      return NextResponse.json({
-        success: true,
-        type,
-        field,
-        value,
-        product: updated,
-        message: "مقدار با موفقیت بروزرسانی شد.",
-      });
-    }
-
-    // ==================================================
-    // INTEGER
-    // ==================================================
-
-    if (integerFields.has(field)) {
-      const value = parseInteger(body.value ?? body[field]);
-
-      if (value === null) {
-        return NextResponse.json(
-          { success: false, error: "مقدار عددی نامعتبر است." },
-          { status: 400 }
-        );
-      }
-
-      if (field === "discountPercentage" && (value < 0 || value > 100)) {
-        return NextResponse.json(
-          { success: false, error: "درصد تخفیف باید بین ۰ تا ۱۰۰ باشد." },
-          { status: 400 }
-        );
-      }
-
-      if (
-        (field === "capacity" || field === "remainingCapacity") &&
-        value < 0
-      ) {
-        return NextResponse.json(
-          { success: false, error: "ظرفیت نمی‌تواند منفی باشد." },
-          { status: 400 }
-        );
-      }
-
-      if (field === "starRating" && (value < 0 || value > 5)) {
-        return NextResponse.json(
-          { success: false, error: "امتیاز هتل باید بین ۰ تا ۵ باشد." },
-          { status: 400 }
-        );
-      }
-
-      const updated = await updateProduct(
-        type,
-        id,
-        field,
-        value
-      );
-
-      return NextResponse.json({
-        success: true,
-        type,
-        field,
-        value,
-        product: updated,
-        message: "مقدار عددی با موفقیت بروزرسانی شد.",
-      });
-    }
-
-    // ==================================================
-    // PRICE / DECIMAL
-    // ==================================================
-
-    if (priceFields.has(field)) {
-      const value = parseDecimal(body.value ?? body[field]);
-
-      if (value === null) {
-        return NextResponse.json(
-          { success: false, error: "قیمت نامعتبر است." },
-          { status: 400 }
-        );
-      }
-
-      const numericValue = Number(value);
-      const currentPrice = Number(product.price);
-
-      if (
-        field === "discountedPrice" &&
-        numericValue >= currentPrice
-      ) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "قیمت تخفیف‌خورده باید کمتر از قیمت اصلی باشد.",
-          },
-          { status: 400 }
-        );
-      }
-
-      const updated = await updateProduct(
-        type,
-        id,
-        field,
-        value
-      );
-
-      return NextResponse.json({
-        success: true,
-        type,
-        field,
-        value,
-        product: updated,
-        message: "قیمت با موفقیت بروزرسانی شد.",
-      });
-    }
-
-    // ==================================================
-    // DATE
-    // ==================================================
-
-    if (dateFields.has(field)) {
-      const value = parseDate(body.value ?? body[field]);
-
-      if (value === null) {
-        return NextResponse.json(
-          { success: false, error: "تاریخ نامعتبر است." },
-          { status: 400 }
-        );
-      }
-
-      const updated = await updateProduct(
-        type,
-        id,
-        field,
-        value
-      );
-
-      return NextResponse.json({
-        success: true,
-        type,
-        field,
-        value,
-        product: updated,
-        message: "تاریخ با موفقیت بروزرسانی شد.",
-      });
-    }
-
-    // ==================================================
-    // STRING
-    // ==================================================
-
-    if (commonStringFields.has(field)) {
-      const value = parseString(body.value ?? body[field]);
-
-      const requiredFields = new Set([
-        "name",
-        "destination",
-        "origin",
-        "city",
-        "country",
-      ]);
-
-      if (requiredFields.has(field) && !value) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: `فیلد "${field}" نمی‌تواند خالی باشد.`,
-          },
-          { status: 400 }
-        );
-      }
-
-      const updated = await updateProduct(
-        type,
-        id,
-        field,
-        value
-      );
-
-      return NextResponse.json({
-        success: true,
-        type,
-        field,
-        value,
-        product: updated,
-        message: "اطلاعات با موفقیت بروزرسانی شد.",
-      });
-    }
-
-    // ==================================================
-    // UNKNOWN FIELD
-    // ==================================================
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: `نوع فیلد "${field}" پشتیبانی نمی‌شود.`,
-      },
-      { status: 400 }
-    );
-
-  } catch (error: unknown) {
+    const updated = await updateProduct(type, id, field, value);
+    return NextResponse.json({ success: true, type, id, field, value, product: updated, message: "اطلاعات با موفقیت ذخیره شد." });
+  } catch (error) {
     console.error("Product update error:", error);
-
-    const err = error as {
-      code?: string;
-      message?: string;
-    };
-
-    if (err.code === "P2025") {
-      return NextResponse.json(
-        { success: false, error: "محصول پیدا نشد." },
-        { status: 404 }
-      );
-    }
-
-    if (err.code === "P2002") {
-      return NextResponse.json(
-        { success: false, error: "مقدار وارد شده تکراری است." },
-        { status: 409 }
-      );
-    }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: err.message || "خطا در بروزرسانی محصول.",
-      },
-      { status: 500 }
-    );
+    const code = typeof error === "object" && error !== null && "code" in error ? String((error as { code?: unknown }).code) : "";
+    if (code === "P2025") return NextResponse.json({ success: false, error: "محصول پیدا نشد." }, { status: 404 });
+    if (code === "P2002") return NextResponse.json({ success: false, error: "مقدار واردشده تکراری است." }, { status: 409 });
+    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : "خطا در ذخیره اطلاعات." }, { status: 400 });
   }
 }

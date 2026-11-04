@@ -347,13 +347,13 @@ const descriptions: Record<ProductType, string> = {
       image: product.image,
 
       // Prisma Decimal → number
-      price: Number(product.price),
+      price: product.price === null ? null : Number(product.price),
 
       currency:
         product.currency,
 
       discountPercentage:
-        product.discountPercentage,
+        product.discountPercentage ?? null,
 
       // Prisma Decimal → number | null
       discountedPrice:
@@ -362,10 +362,10 @@ const descriptions: Record<ProductType, string> = {
           : null,
 
       isPublished:
-        product.isPublished,
+        isAdmin ? product.isPublished : false,
 
       isSpecial:
-        product.isSpecial,
+        isAdmin ? product.isSpecial : false,
     }}
     type={productType}
     showAdminActions={isAdmin}
